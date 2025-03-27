@@ -5,6 +5,7 @@ https://docs.pydantic.dev/latest/concepts/json_schema/#generating-json-schema
 """
 
 import json
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -81,10 +82,10 @@ class CoarseEdge(BaseModel):
 class Schema(BaseModel):
     """The final schema, encapsulating all information"""
 
-    distinguish_enantiomers: bool
-    plural_species: list[LumpedSpecies]
-    detail_network: list[DetailEdge]
-    coarse_network: list[CoarseEdge]
+    schema_version: Literal["1.0.0b0"]
+    """value of this field is used to determine which version of the schema to
+    validate against
+    """
 
 
 if __name__ == "__main__":
