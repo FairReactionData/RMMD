@@ -1,6 +1,10 @@
 [project]
 authors = [{name = "Andreas Copan", email = "avcopan@gmail.com"}]
-dependencies = ["pydantic>=2.10.0,<3"]
+dependencies = [
+    "pydantic>=2.10.0,<3",
+    "pyyaml>=5.4.1,<7",
+    "pytest>=8.0<9"
+]
 description = "Add a short description here"
 name = "rmess"
 requires-python = ">= 3.11"
