@@ -9,7 +9,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, computed_field
 
-from .keys import CitationKey, PointId
+from .keys import CitationKey, PointId, QcCalculationId
 
 
 class ElectronicState(BaseModel):
@@ -51,6 +51,9 @@ class _QcCalculationBase(BaseModel):
     software: Software|None = None
     """..."""
 
+    point: PointId
+    """point in the dataset to which this calculation belongs"""
+
     references: list[CitationKey]|None = None
     """literature describing the calculation"""
     source: list[CitationKey]|None = None
@@ -64,7 +67,7 @@ class QcCalculationData(_QcCalculationBase):
 class QcCalculationReference(_QcCalculationBase):
     """referecne to a quantum chemistry calculation in a public dataset"""
 
-    source: list[CitationKey]     # non-optional
+    source: list[CitationKey]    # non-optional
     """references to the data itself"""
 
 QcCalculation = Annotated[QcCalculationData|QcCalculationReference,
@@ -92,15 +95,9 @@ class Point(BaseModel):
 
     domain: BoPesDomain
 
-    calculations: list[QcCalculation]
+    calculations: list[QcCalculationId] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
 
-
-    # local_id: int
-    # """unique identifier of the stationary point within the dataset represented using this schema"""
-
-
-# different relations of points:
 
 PointEnsemble = Annotated[list[PointId], Field(min_length=1)]
 """ensemble of stationary points on a potential energy surface
@@ -138,7 +135,7 @@ class NMolecularWell(_PesStageBase):
     def n(self) -> int:
         return len(self.points)
 
-    # TODO how to interpret bimolecular wells? technically, they are a single point on the same PES domain as the TS with the two molecular entities being modeled as infinitely far apart; alternative view: two points on different PES domains with a special relation between them
+    # TODO how to interpret bimolecular wells that are not VdW complexes? technically, they are a single point on the same PES domain as the TS with the two molecular entities being modeled as infinitely far apart; alternative view: two points on different PES domains with a special relation between them
 
 class VdWComplex(_PesStageBase):
     """A van der Waals complex in a detailed PES network.
@@ -149,8 +146,9 @@ class VdWComplex(_PesStageBase):
     point: PointId|PointEnsemble
 
 class NthOrderSaddlePoint(_PesStageBase):
-    """A saddle point of order n in a detailed PES network, e.g. a second-order saddle point connecting two TS conformers.
-    Use special TransitionState class for first oder saddle points"""
+    """A saddle point of order n (>1) in a detailed PES network, e.g. a
+    second-order saddle point connecting two TS conformers.
+    Use type = transition state for first oder saddle points."""
 
     type: Literal['nth-order saddle point'] = 'nth-order saddle point'
     order: int
@@ -167,14 +165,18 @@ class TransitionState(NthOrderSaddlePoint):
     """stationary point(s) of the transition state"""
 
 
-PesStage = Annotated[UnimolecularWell|NMolecularWell|VdWComplex
-                     |NthOrderSaddlePoint|TransitionState,
+Well = Annotated[UnimolecularWell|NMolecularWell|VdWComplex,
                      Field(discriminator='type')]
+SaddlePoint = Annotated[NthOrderSaddlePoint|TransitionState,
+                         Field(discriminator='type')]
 
 class PesReaction(BaseModel):
     """An Edge/"ReactionStep" in a detailed PES network"""
 
-    stages: PesStage
+    stages: tuple[Well, Well]
+    """product and reactant wells"""
+    saddle_point: SaddlePoint
+    """transition state"""
     irc_scan_forward: PointSequence|None = None
     """path connecting the stages"""
     irc_scan_backward: PointSequence|None = None
