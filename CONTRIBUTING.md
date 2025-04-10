@@ -48,9 +48,9 @@ The schema models both molecular and macroscopic quantities, so be cautious abou
     | energy      | Hartree     |
     | time        | femtosecond  |
     | charge      | electron charge (proton: +1) |
-
-    > [!NOTE]
-    > While these units are commonly used in quantum chemistry software inputs/outputs, they do not form a consistent system of units!
+  
+> [!NOTE]
+> While these units are commonly used in quantum chemistry software inputs/outputs, they do not form a consistent system of units!
 
 - Modules dealing with **macroscopic thermodynamics** (thermochemistry, etc.) should adhere strictly to **SI units**.
 
@@ -69,7 +69,7 @@ Here are some guiding principles for design:
     1. Define a key for identifying a specific instance of the model in a dataset (e.g., `SpeciesName = Annotated[str, Field(pattern="^[a-zA-Z][a-zA-Z0-9-+*()]*$")]`).
     2. The base schema should get a dictionary of all such objects (e.g., `species: dict[SpeciesName, Species]`)
     3. Whenever another object is connected to your object use the key instead of the object itself (e.g., `reactants: list[SpeciesName]` not ~~`reactants: list[Species]`~~)
-- When a model X only has a single one-to-one or one-to-many realtionship to another model Y, they may be nested, i.e., a field of Y has type X (without using keys).
+- When a model X only has a single one-to-one or one-to-many realtionship to another model Y, they may be nested hierarchically, i.e., a field of Y has type X (without using keys).
 - Favor the [annotated pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern) over `f: <type> = pydantic.Field(...)`.
-- Comment on your design decisions — describe why something was done rather than just what was done.
+- Add comments on your design decisions — describe **why** something was done **rather than** just **what** was done.
 - Define units precisely for numerical values; avoid leaving unit choice up to users/data suppliers (e.g., do not add a unit field next to a value field).
