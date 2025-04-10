@@ -1,49 +1,75 @@
-- welcome note/table of content
-    - this projects benefits from different perspectives...
-    - we welcome contributions
-    - still in start phase
-- report bugs/request features
-    - rules?
-- code contribution/review process
-    - how to know which work packages are open for contribution? -> ...
-    - decision process for design: tbd
-    - review process: tbd
-    - what to consider:
-        - see below
-- testing/examples
-    - all parts of the schema should be tested
-    - we use example yaml files to test the schema -> in examples/ directory, these (along with docstrings) also serve as documentaiton in the early stage of development
-    - add (to) tests/example for all new models/classes in the schema
-        - tip: it may even be easier to start with the test/example files then write the pydantic model to think about how the schema is used first
-    - for each example file add a metadata block to the beginning with a description of the test and if and how the validation should fail (see examples/minimal.yaml)
-- conventions
-    - Adhere to the [PEP8 Style Guide](https://peps.python.org/pep-0008/), if not otherwise in this document.
-    - Use [Sphinx-style](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html) docstrings
-    - units:
-        - schema models molecular and macroscopic quntities -> be carful about units!
-        - put units into docstrings in square brackets
-        - - **Molecular quantities** should use the following unit:
+# Contributing Guidelines
 
-            | Quantitiy | Unit |
-            |---        |---   |
-            | length    | Ångström |
-            | temperature | Kelvin |
-            | mass      | a.m.u. |
-            | energy    | Hartree |
-            | time      | femtosecond |
-            | charge    | electron charge (proton: +1) |
+Thank you for taking the time to contribute to this project.
 
-            While these units are commonly used, e.g., in the input and output of quantum chemistry software, they do not constitute a consistent system of units!
+## Reporting Bugs & Requesting Features
 
-        - Modules dealing with **macroscopic thermodynamics** (thermochemistry, ...) should use **SI units**
-    - naming
-        - related literature references vs. a reference to the dataset/..., e.g. "references"/"related_references" vs "data_references" vs "source"
-        - models/classes meant as base models and not to be used directly should start with an underscore and end on `Base` , e.g., `_ThermoPropertyBase`
-- design principles
-    - try to avoid None/optional values? -> instead use `Literal["unkown"]` and `Literal["not-needed"]`
-    - avoid hierarchical structure -> reason + how to do this consistently
+If you encounter any issues or have suggestions for new features, please create an issue:
 
-        - use keys
-    - prefer the [annotated pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern) over `f: <type> = pydantic.Field(...)`
-    - comment design decisions; describe why you did something instead of what you did
-    - units: Try to define the units for numerical values exactly and avoid leaving the choice of units to the user (e.g., do not add a unit field next to a value field so that the user/data supplier decided what the unit is) - also see units in conventions section (link)
+- Clearly describe the bug or feature request.
+- Check if the issue has already been reported or requested before submitting a new one.
+
+## Code Contribution & Review Process
+
+To know which work packages are open for contribution, please refer to our issue tracker. Contributions can be discussed and prioritized within our team.
+
+> [!NOTE]
+> Details regarding decision-making and review processes are still to be determined. We encourage open discussions around design choices.
+
+
+## Testing & Examples
+
+Testing is crucial for maintaining quality across all parts of the schema. We utilize example YAML files located in the `examples/` directory to test the schema. You simply need to run pytest to test the example files. These example files also serve as documentation during this early stage of development.
+So, when adding new models/classes, please add corresponding tests/examples.
+
+> [!TIP]
+> It may be easier to start with test/example files first to understand how the schema will be used before writing the Pydantic model.
+
+For each example file, include a metadata block at the beginning that describes the test and specifies if and how validation should fail (see [examples/minimal.yaml](examples/minimal.yaml)).
+
+## Conventions
+
+### General Guidelines
+
+- Adhere to the [PEP8 Style Guide](https://peps.python.org/pep-0008/) unless otherwise specified in this document.
+- Use [Sphinx-style](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html) docstrings for all public methods and classes.
+
+### Units
+
+The schema models both molecular and macroscopic quantities, so be cautious about units:
+- Document units in square brackets within the docstring of a field.
+- **Molecular quantities** should use these units:
+
+    | Quantity    | Unit        |
+    |-------------|-------------|
+    | length      | Ångström    |
+    | temperature  | Kelvin      |
+    | mass        | a.m.u.     |
+    | energy      | Hartree     |
+    | time        | femtosecond  |
+    | charge      | electron charge (proton: +1) |
+
+    > [!NOTE]
+    > While these units are commonly used in quantum chemistry software inputs/outputs, they do not form a consistent system of units!
+
+- Modules dealing with **macroscopic thermodynamics** (thermochemistry, etc.) should adhere strictly to **SI units**.
+
+### Naming Conventions
+
+- Field names for (literature) references: References for related literature that describes the data (e.g., associated papers) should be called `references` whereas references that give the source for some data should be called `source`. Both have type `list[CitationKey]`
+- Base model names intended not for direct use should start with an underscore and end with `Base`, e.g., `_ThermoPropertyBase`.
+- ...
+
+## Design Principles
+
+Here are some guiding principles for design:
+
+- Avoid using None/optional values; instead, prefer using `Literal["unknown"]` or `Literal["not-needed"]`.
+- Steer clear of hierarchical structures for models that may be related in a many to many realtion to other models. Instead:
+    1. Define a key for identifying a specific instance of the model in a dataset (e.g., `SpeciesName = Annotated[str, Field(pattern="^[a-zA-Z][a-zA-Z0-9-+*()]*$")]`).
+    2. The base schema should get a dictionary of all such objects (e.g., `species: dict[SpeciesName, Species]`)
+    3. Whenever another object is connected to your object use the key instead of the object itself (e.g., `reactants: list[SpeciesName]` not ~~`reactants: list[Species]`~~)
+- When a model X only has a single one-to-one or one-to-many realtionship to another model Y, they may be nested, i.e., a field of Y has type X (without using keys).
+- Favor the [annotated pattern](https://docs.pydantic.dev/latest/concepts/fields/#the-annotated-pattern) over `f: <type> = pydantic.Field(...)`.
+- Comment on your design decisions — describe why something was done rather than just what was done.
+- Define units precisely for numerical values; avoid leaving unit choice up to users/data suppliers (e.g., do not add a unit field next to a value field).
