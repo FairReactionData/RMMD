@@ -5,3 +5,4 @@ description: This is a mimial example of a valid file
 failure: null   # valid file
 --- # actual example
 schema_version: 1.0.0b0
+license: MIT
