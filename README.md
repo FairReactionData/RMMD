@@ -19,8 +19,6 @@ To test that your environment is working, you can run the example script:
 python example.py
 ```
 
-## Editing the schema
+## Contributing
 
-You can edit the schema in `src/rmess/schema.py`. If you wish to sketch out an
-alternative idea rather than editing, you can simply create another file in this
-directory.
+Please check the [contribution guidelines](CONTRIBUTING.md) for more details
