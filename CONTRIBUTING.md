@@ -64,7 +64,7 @@ The schema models both molecular and macroscopic quantities, so be cautious abou
 
 Here are some guiding principles for design:
 
-- Avoid using None/optional values; instead, prefer using `Literal["unknown"]` or `Literal["not-needed"]`.
+- Prefer using `Literal["unknown"]` and `Literal["not-needed"]` over `None` to minimize ambiguity. 
 - Steer clear of hierarchical structures for models that may be related in a many to many realtion to other models. Instead:
     1. Define a key for identifying a specific instance of the model in a dataset (e.g., `SpeciesName = Annotated[str, Field(pattern="^[a-zA-Z][a-zA-Z0-9-+*()]*$")]`).
     2. The base schema should get a dictionary of all such objects (e.g., `species: dict[SpeciesName, Species]`)
