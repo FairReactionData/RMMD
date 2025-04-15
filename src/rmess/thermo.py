@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 from pydantic import BaseModel, Field
-from rmess.rmess import Software
+
+from .rmess import PointEnsemble, Software
 from .keys import CitationKey, QcCalculationId
 
 class _ThermoPropertyBase(BaseModel):
@@ -25,7 +26,7 @@ class _ThermoPropertyBase(BaseModel):
 class _FittedToMixin(BaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
-    fitted_to: list[CitationKey]|ThermoProperty|None = None
+    fitted_to: list[CitationKey]|SpeciesThermo|None = None
     """data/model that the coefficients of this model were fitted to"""
 
 class Nasa7(_ThermoPropertyBase, _FittedToMixin):
@@ -80,6 +81,8 @@ class ThermoTable(_ThermoPropertyBase):
 class Rrho(_ThermoPropertyBase):
     """Rigid-Rotor harmonic oscillator"""
 
+    type: Literal["RRHO"] = "RRHO"
+
     frequencies: QcCalculationId # link to QcCalculation?
     frequency_scaling: float  # TODO value + type + source
     quasi_harmonic_approx: str
@@ -92,19 +95,25 @@ class Rrho(_ThermoPropertyBase):
 # TODO how to deal with the different approaches of getting thermochemistry from QM (e.g. even for RRHO you can apply different quasi-harmonic approximations to the parititon function or just to the entropy, there are different ways to apply frequency scaling, ... - not to mention 1DHR)
 #   maybe collect different ways of how thermochemistry is obtained from collaboration then think about schema!
 
-class RrhoEnsemble(_ThermoPropertyBase):
+class BoltzmannWeightedEnsemble(_ThermoPropertyBase):
     """ensemble of multiple stationary points modelled as RRHO each"""
 
-    members: list[Rrho]
+    members: PointEnsemble
+    """members of the ensemble, each with its degeneracy"""
+    energy_expression: Literal["Gibbs free energy", "enthalpy", "electronic energy", "ZPE"]
+    """energy expression used in the Boltzmann coefficient to calculate the ensemble average."""
+
 
 ###############################################################################
 # general
 ###############################################################################
 
-ThermoProperty = Annotated[Nasa7|Shomate|ThermoTable,
+SpeciesThermo = Annotated[Nasa7|Shomate|ThermoTable|BoltzmannWeightedEnsemble,
                            Field(discriminator='type')]
 """Thermochemical data for a specific species. Use this in type hints
 
 All thermoproperties need to have a type field.
 """
 
+PointThermo = Rrho
+"""Thermochemical data for a specific point on a potential energy surface."""

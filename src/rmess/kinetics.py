@@ -41,5 +41,6 @@ class RateTable(_RateCoefficientBase):
     k: list[float]
     """rate coefficients in SI units"""
 
+# TODO add rates from TST, master equation, etc.
 
 RateCoefficient = Annotated[ModifiedArrhenius, Field(discriminator="type")]

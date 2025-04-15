@@ -5,10 +5,12 @@ https://docs.pydantic.dev/latest/concepts/json_schema/#generating-json-schema
 """
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, PositiveInt, computed_field
 
+from .thermo import PointThermo
+from .species import Constitution
 from .keys import CitationKey, PointId, QcCalculationId
 
 
@@ -82,8 +84,8 @@ QcCalculation = Annotated[QcCalculationData|QcCalculationReference,
 class BoPesDomain(BaseModel):
     """Domain of a Born-Oppenheimer potential energy surface"""
 
-    constitution: Any
-    electronic_state: Any
+    constitution: Constitution
+    electronic_state: ElectronicState
 
     # solvent: ... # maybe add this later
 
@@ -97,13 +99,24 @@ class Point(BaseModel):
 
     calculations: list[QcCalculationId] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
+    # TODO: really only allow one PointThermo per Point?
+    thermo: PointThermo|None = None
+    """thermochemical properties for this point, if it alone is considered"""
 
 
-PointEnsemble = Annotated[list[PointId], Field(min_length=1)]
-"""ensemble of stationary points on a potential energy surface
+PointEnsemble = Annotated[list[tuple[PointId, PositiveInt]],
+                          Field(min_length=1)]
+"""ensemble of stationary points on a potential energy surface.
 
 Used when multiple points interconvert fast w.r.t. the timescale of interest,
-e.g.; conformers, ..."""
+e.g.; conformers, ...
+Each point has a degeneracy which can be provided explicitly as number or
+implicitly by introducing additional members each with degeneracy one.
+For example, the conformer ensemble of butane could be represented as [(0, 1),
+(1, 1), (2, 1)] or [(0, 1), (1, 2)]. Where 0 is the point representing the
+trans conformer and 1 and 2 are points representing the two mirror images of
+the gauche conformer.
+"""
 
 PointSequence = Annotated[list[PointId], Field(min_length=1)]
 """path connecting stationary points on a potential energy surface, e.g., a

@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 from abc import ABC
-from typing import Literal, TypeAlias
+from typing import Annotated, Literal, TypeAlias
 
 
-from pydantic import BaseModel
-from rmess.thermo import ThermoProperty
+from pydantic import BaseModel, Field
 
+from .thermo import SpeciesThermo
 from .rmess import ElectronicState, PesReaction, Point
-
-from .keys import CitationKey
+from .keys import CitationKey, SpeciesName
 
 
 class Species(BaseModel):
@@ -21,7 +20,7 @@ class Species(BaseModel):
     entities can be described using only canonical representations, there
     automatically is a canonical representation for the species.
     """
-    thermo: list[ThermoProperty]
+    thermo: list[SpeciesThermo]
     """thermochemical properties for this species"""
     transport: list[TransportProperty]
     """transport properties for this species"""
@@ -35,11 +34,14 @@ class MolecularEntity(BaseModel):
     # TODO canonical representation of each field; this is similar to the layers of an InChI
     constitution: Constitution
     connectivity: MolecularConnectivity
-    isotope: Isotopes|None = None
+    isotopes: list[int]|Literal["natural-abundance"]|Literal["most-common"] = "natural-abundance"
+    """number of neutrons for each atom"""
     stereo: Stereochemistry|None = None
     electronic_state: ElectronicState|None = None
     """usually the ground state is assumed"""
     points: list[Point]|Literal['all'] = 'all'
+    """list of points on a PES that correspond to this molecular entity. If not
+    "all", the representation is not canonical -> use carefully!"""
 
     # TODO introduce separate Molecular entity definiton? -> e.g. what about crystals, other materials
 
@@ -52,7 +54,7 @@ class CoarseNode(BaseModel):
     # can be extended, if necessary, subclasses for some roles can
     # add additional fields
     role: Literal['reactant', 'product', 'solvent', 'catalyst']
-    species: Species
+    species: SpeciesName
 
 class Reaction(BaseModel):
     """A chemical reaction"""
@@ -76,19 +78,13 @@ class ReactionDefinition(BaseModel):
 # identifiers -> move to separate module?
 ##############################################################################
 
-# TODO how to serialize molecular entities?
-class Constitution(BaseModel):
-    """Molecular constitution"""
+# TODO use "Composition" instead of "Constitution"?
+Constitution = Annotated[dict[str, int], Field(
+                                        examples=[{"C": 1, "H": 4}],
+                        )]
+""""element count, e.g. {'C': 1, 'H': 4}"""
 
-    element_count: dict[str, int]
-    """example {"C": 1, "H": 4}"""
-
-class Isotopes(BaseModel):
-    """Isotope information for each atom"""
-
-    n_neutrons: list[int]
-    """number of neutrons for each atom"""
-
+# TODO use existing standard (e.g. "non-standard" InChI with fixed-H layer) or define canonical numbering of atoms, ...?
 class MolecularConnectivity(BaseModel):
     """Connectivity between atoms"""
 
