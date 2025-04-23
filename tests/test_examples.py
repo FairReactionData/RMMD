@@ -45,7 +45,7 @@ def _import_module(name: str) -> type[BaseModel]:
     """Get a model by its name"""
     parts = name.split(".")
     class_name = parts[-1]
-    module_name =  ".".join(["rmess"] + parts[:-1])
+    module_name =  ".".join(["rmmd"] + parts[:-1])
 
     module = importlib.import_module(module_name)
     model = getattr(module, class_name)
