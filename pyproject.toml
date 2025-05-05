@@ -15,6 +15,9 @@ version = "1.0.0"
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
+[project.scripts]
+rmmd = "rmmd.cli:rmmd"
+
 [tool.pixi.project]
 channels = ["conda-forge"]
 platforms = ["linux-64"]
