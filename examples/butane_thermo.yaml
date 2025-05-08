@@ -16,8 +16,8 @@ species:
           - [298.15, 1000]
           - [1000, 5000]
         coefficients:
-          - [  3.188,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-          - [  2.500,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
+          - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
+          - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
         fitted_to: 1  # fittest to the other entry in the thermo list
       - type: "Boltzmann weighted ensemble"
         members: [[0, 1], [1, 2]]   # thermochemistry data of points 0 and 1
