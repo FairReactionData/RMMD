@@ -9,9 +9,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, PositiveInt, computed_field
 
-from .thermo import PointThermo
-from .species import Constitution
-from .keys import CitationKey, PointId, QcCalculationId
+from rmmd.metadata import LocalFile
+from rmmd.keys import CitationKey, PointId, QcCalculationId
 
 
 class ElectronicState(BaseModel):
@@ -53,12 +52,9 @@ class _QcCalculationBase(BaseModel):
     software: Software|None = None
     """..."""
 
-    point: PointId
-    """point in the dataset to which this calculation belongs"""
-
     references: list[CitationKey]|None = None
     """literature describing the calculation"""
-    source: list[CitationKey]|None = None
+    source: list[CitationKey|LocalFile]|None = None
     """source of the data"""
 
 class QcCalculationData(_QcCalculationBase):
@@ -84,7 +80,7 @@ QcCalculation = Annotated[QcCalculationData|QcCalculationReference,
 class BoPesDomain(BaseModel):
     """Domain of a Born-Oppenheimer potential energy surface"""
 
-    constitution: Constitution
+    constitution: "Constitution"
     electronic_state: ElectronicState
 
     # solvent: ... # maybe add this later
@@ -97,10 +93,13 @@ class Point(BaseModel):
 
     domain: BoPesDomain
 
+    description: str|None = None
+    """human-readable description of the point"""
+
     calculations: list[QcCalculationId] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
     # TODO: really only allow one PointThermo per Point?
-    thermo: PointThermo|None = None
+    thermo: "PointThermo|None" = None
     """thermochemical properties for this point, if it alone is considered"""
 
 
@@ -195,3 +194,6 @@ class PesReaction(BaseModel):
     irc_scan_backward: PointSequence|None = None
     """path connecting the stages"""
 
+# avoid circular imports by importing here and using forward references above
+from rmmd.thermo import PointThermo  # noqa: E402
+from rmmd.species import Constitution  # noqa: E402

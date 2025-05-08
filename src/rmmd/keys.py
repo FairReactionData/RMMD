@@ -13,12 +13,19 @@ CitationKey = Annotated[str, Field(min_length=1,
                                    examples=["arrhenius1889"],
                                    )]
 """key for a literature reference"""
+
 SpeciesName = Annotated[str, Field(min_length=1,
                                    max_length=16,  # from CHEMKIN II
                                    pattern="^[a-zA-Z][a-zA-Z0-9-+*()]*$",
                                    examples=["CH4"],
                                    )]
 """name of a species in the dataset"""
+
+EntityKey = Annotated[str, Field(min_length=27, max_length=27,
+                                   pattern="^[A-Z]{14}-[A-Z]{10}-[A-Z]$",
+                                   )]
+"""key for a canonical representation of a species in the dataset, currently: InChIKey with fixed-H layer"""
+
 QcCalculationId = int
 """index of calculation in the list of calculations"""
 PointId = int

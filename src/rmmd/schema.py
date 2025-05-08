@@ -2,10 +2,10 @@
 # Full Schema
 from typing import Literal
 
-from .keys import CitationKey, SpeciesName
+from .keys import CitationKey, EntityKey, SpeciesName
 from .rmess import Point, QcCalculation
 from .metadata import Citation, Reference
-from .species import Reaction, Species
+from .species import CanonicalEntity, Reaction, Species
 
 from pydantic import BaseModel, Field
 
@@ -16,8 +16,11 @@ class Schema(BaseModel):
     ### mechanism view ###
     species: dict[SpeciesName, Species] = Field(default_factory=dict)
     """chemical species in the dataset"""
+    entities: dict[EntityKey, CanonicalEntity] = Field(default_factory=dict)
+    """canonical representation of the species in the dataset. InChiKeys are generated including the fixed-H layer"""
     reactions: list[Reaction] = Field(default_factory=list)
     """reactions in the dataset"""
+
 
     ### electronic structure view ###
     points: list[Point] = Field(default_factory=list)
@@ -38,3 +41,5 @@ class Schema(BaseModel):
     literature: dict[CitationKey, Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""
 
+
+Schema.model_rebuild()

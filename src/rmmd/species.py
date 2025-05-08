@@ -9,23 +9,27 @@ from pydantic import BaseModel, Field
 
 from .thermo import SpeciesThermo
 from .rmess import ElectronicState, PesReaction, Point
-from .keys import CitationKey, SpeciesName
+from .keys import CitationKey, EntityKey, SpeciesName
 
 
 class Species(BaseModel):
     """A chemical species."""
 
-    entities: list[MolecularEntity]
+    name: str|None = None
+    """human-readable name of the species. This is not a unique identifier,
+    but can be used to identify the species in a human-readable way.
+    """
+    entities: list[EntityKey]
     """a species is an ensemble of molecular entities. If the molecular
     entities can be described using only canonical representations, there
     automatically is a canonical representation for the species.
     """
-    thermo: list[SpeciesThermo]
+    thermo: list[SpeciesThermo] = Field(default_factory=list)
     """thermochemical properties for this species"""
-    transport: list[TransportProperty]
+    transport: list[TransportProperty] = Field(default_factory=list)
     """transport properties for this species"""
 
-class MolecularEntity(BaseModel):
+class CanonicalEntity(BaseModel):
     """identifiable and distinguishable entity
 
     """
@@ -44,6 +48,18 @@ class MolecularEntity(BaseModel):
     "all", the representation is not canonical -> use carefully!"""
 
     # TODO introduce separate Molecular entity definiton? -> e.g. what about crystals, other materials
+
+    # If we explicitly represent the different information layers, we need a
+    # more concise form to refer to each entity. InChIKeys with H-layers is
+    # one way to get a canonical representation although InChIs cannot
+    # distinguish all species relevant in gas-phase kinetics contexts. The
+    # representation of each layer does not even need to be canonical, as long
+    # as we have a function that produces a canonical representation.
+    # TODO better canoncial representation of each layer
+    def inchi_key_h_layer(self) -> str:
+        """returns the InChI key of the entity, including the fixed-H layer"""
+        # TODO implement
+        return "AAAAAAAAAAAAAA-AAAAAAAAAA-A"
 
 class TransportProperty(BaseModel):
     """Transport property for species"""

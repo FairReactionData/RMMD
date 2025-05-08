@@ -98,10 +98,11 @@ class Rrho(_ThermoPropertyBase):
 class BoltzmannWeightedEnsemble(_ThermoPropertyBase):
     """ensemble of multiple stationary points modelled as RRHO each"""
 
+    type: Literal["Boltzmann weighted ensemble"] = "Boltzmann weighted ensemble"
     members: PointEnsemble
     """members of the ensemble, each with its degeneracy"""
     energy_expression: Literal["Gibbs free energy", "enthalpy", "electronic energy", "ZPE"]
-    """energy expression used in the Boltzmann coefficient to calculate the ensemble average."""
+    """energy expression used in the Boltzmann coefficient to calculate the weigths of ensemble members."""
 
 
 ###############################################################################

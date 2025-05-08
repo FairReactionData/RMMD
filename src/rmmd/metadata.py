@@ -24,4 +24,4 @@ class Citation(BaseModel):
     authors: list[str]
     doi: Doi
 
-Reference = Doi|HttpUrl|Citation|LocalFile
+Reference = Doi|HttpUrl|Citation

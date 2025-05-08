@@ -1,0 +1,52 @@
+--- # test setup
+description: How to represent thermochemistry data using Butane as an example
+# schema_part: schema.Schema  - not needed for this example (schema.Schema is
+#                               the default); used to test against a subschema
+failure: null   # valid file
+--- # actual example
+schema_version: 1.0.0b0
+license: MIT
+species:
+  C4H10:
+    name: "Butane"
+    entities: [IJDNQMDRQITEOD-UHFFFAOYNA-N]
+entities:
+  IJDNQMDRQITEOD-UHFFFAOYNA-N:
+    constitution: {C: 4, H: 10}
+    connectivity: {}
+points:
+  - domain:
+      constitution: {C: 4, H: 10}
+      electronic_state: {charge: 0, spin: 0}
+    calculation: [0, 2]   # ids in the calculation list
+    description: "trans conformer of butane"
+  - domain:
+      constitution: {C: 4, H: 10}
+      electronic_state: {charge: 0, spin: 0}
+    calculation: [1, 3]   # ids in the calculation list
+    description: "gauche conformer of butane"
+calculations:
+  - level_of_theory: "B3LYP-D3BJ/def2-TZVP"
+    electronic_state: {charge: 0, spin: 0}
+    software:
+      name: "ORCA"
+      version: "5.0.3"
+    source: ["./data/butane_opt_trans.log"]
+  - level_of_theory: "B3LYP-D3BJ/def2-TZVP"
+    electronic_state: {charge: 0, spin: 0}
+    software:
+      name: "ORCA"
+      version: "5.0.3"
+    source: ["./data/butane_opt_gauche.log"]
+  - level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
+    electronic_state: {charge: 0, spin: 0}
+    software:
+      name: "ORCA"
+      version: "5.0.3"
+    source: ["./data/butane_spe_trans.log"]
+  - level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
+    electronic_state: {charge: 0, spin: 0}
+    software:
+      name: "ORCA"
+      version: "5.0.3"
+    source: ["./data/butane_spe_gauche.log"]
