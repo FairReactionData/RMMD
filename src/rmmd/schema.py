@@ -7,7 +7,7 @@ https://docs.pydantic.dev/latest/concepts/json_schema/#generating-json-schema
 import json
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # Species
@@ -81,6 +81,10 @@ class CoarseEdge(BaseModel):
 # Full Schema
 class Schema(BaseModel):
     """The final schema, encapsulating all information"""
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
     schema_version: Literal["1.0.0b0"]
     """value of this field is used to determine which version of the schema to
