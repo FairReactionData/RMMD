@@ -26,8 +26,12 @@ class _ThermoPropertyBase(BaseModel):
 class _FittedToMixin(BaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
-    fitted_to: list[CitationKey]|SpeciesThermo|None = None
-    """data/model that the coefficients of this model were fitted to"""
+    fitted_to: list[CitationKey]|int|None = None
+    """data/model that the coefficients of this model were fitted to.
+
+    If the model was fitted to data form this dataset, an integer (starting at
+    0) to indicate the index of the data in the thermo list of this species.
+    """
 
 class Nasa7(_ThermoPropertyBase, _FittedToMixin):
     """NASA polynomial with 7 coefficients."""
@@ -85,7 +89,7 @@ class Rrho(_ThermoPropertyBase):
 
     frequencies: QcCalculationId # link to QcCalculation?
     frequency_scaling: float  # TODO value + type + source
-    quasi_harmonic_approx: str
+    quasi_harmonic_approx: str|None = None
     spe: QcCalculationId
     symmetry_nr: int  # TODO source + value
     """rotational symmetry number"""
@@ -101,7 +105,7 @@ class BoltzmannWeightedEnsemble(_ThermoPropertyBase):
     type: Literal["Boltzmann weighted ensemble"] = "Boltzmann weighted ensemble"
     members: PointEnsemble
     """members of the ensemble, each with its degeneracy"""
-    energy_expression: Literal["Gibbs free energy", "enthalpy", "electronic energy", "ZPE"]
+    energy_expression: Literal["G", "H", "electronic energy", "ZPE"]
     """energy expression used in the Boltzmann coefficient to calculate the weigths of ensemble members."""
 
 
