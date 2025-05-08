@@ -11,6 +11,11 @@ Doi = Annotated[str, Field(description="Digital Object Identifier (DOI)",
                            )]
 HttpUrl = AnyHttpUrl
 
+LocalFile = Annotated[str, Field(description="Reference to a file in the same dataset as the RMMD file. The reference is given as Posix style path relative to the RMMD file starting with './'.",
+                                examples=["./data/caffeine.xyz"],
+                                pattern=r"^\.\/.*",
+                                )]
+
 class Citation(BaseModel):
 
     title: Annotated[str, Field(min_length=1)]
@@ -19,4 +24,4 @@ class Citation(BaseModel):
     authors: list[str]
     doi: Doi
 
-Reference = Doi|HttpUrl|Citation
+Reference = Doi|HttpUrl|Citation|LocalFile
