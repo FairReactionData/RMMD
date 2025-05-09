@@ -4,5 +4,5 @@ description: This is a mimial example of a valid file
 #                               the default); used to test against a subschema
 failure: null   # valid file
 --- # actual example
-schema_version: 1.0.0b0
+schema_version: 0.1.0b0
 license: MIT

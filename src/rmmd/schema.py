@@ -29,7 +29,7 @@ class Schema(BaseModel):
     """quantum chemistry calculations"""
 
     ### metadata ###
-    schema_version: Literal["1.0.0b0"] = "1.0.0b0"
+    schema_version: Literal["0.1.0b0"] = "0.1.0b0"
     """version of the schema used"""
     license: str
     """license of this dataset"""

@@ -4,7 +4,7 @@ description: How to represent thermochemistry data using Butane as an example
 #                               the default); used to test against a subschema
 failure: null   # valid file
 --- # actual example
-schema_version: 1.0.0b0
+schema_version: 0.1.0b0
 license: MIT
 species:
   C4H10:

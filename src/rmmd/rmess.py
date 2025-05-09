@@ -25,7 +25,7 @@ class ElectronicState(BaseModel):
 
     charge: int
     """total charge"""
-    spin: int
+    spin: int  # TODO: integer -> then use 2*S!
     """total electron spin quantum number"""
 
     @computed_field
@@ -65,7 +65,7 @@ class QcCalculationData(_QcCalculationBase):
 class QcCalculationReference(_QcCalculationBase):
     """referecne to a quantum chemistry calculation in a public dataset"""
 
-    source: list[CitationKey]    # non-optional
+    source: list[CitationKey]    # type: ignore # non-optional
     """references to the data itself"""
 
 QcCalculation = Annotated[QcCalculationData|QcCalculationReference,
