@@ -1,97 +1,45 @@
-"""Defining the Reaction Model Electronic Structure Schema
-
-See this link for a few examples of what you can do:
-https://docs.pydantic.dev/latest/concepts/json_schema/#generating-json-schema
-"""
-
-import json
-from typing import Literal
-
-from pydantic import BaseModel, ConfigDict
-
-
-# Species
-class Calculation(BaseModel):
-    """An individual point/calculation"""
-
-    # AVC question: Our SQL schema separates Point (geometry) from Calculation (input)
-    #              Is this worth doing here as well?
-    symbols: list[str]
-    coordinates: list[tuple[float, float, float]]
-    charge: int
-    multiplicity: int
-    frequencies: list[float]
-    electronic_energy: float
-    gibbs_energy: float
-
-
-class Conformer(BaseModel):
-    calculations: list[Calculation]  # see comment above about Point and Calculation
-
-
-class Species(BaseModel):
-    conformers: list[Conformer]
-
-
-class LumpedSpecies(BaseModel):
-    """Describes the contribution of each species to the lump.
-
-    Example:
-        (C2H5OH, 0.2)
-        (C3H7OH, 0.4)
-        (C4H9OH, 0.4)
-    """
-
-    species_fractions: list[tuple[Species, float]]
-
-
-# Detail network elements
-#   Each detailed network will connect specific points at a specific level of theory
-class DetailNode(BaseModel):
-    """A Node/"NetworkStage" in a detailed PES network"""
-
-    calculations: list[Calculation]
-
-
-class DetailEdge(BaseModel):
-    """An Edge/"ReactionStep" in a detailed PES network"""
-
-    start_node: DetailNode
-    end_node: DetailNode
-    ts_node: DetailNode
-
-
-# Coarse network elements
-#   Each coarse network will connect species (or lumped species) comprising multiple
-#   conformers
-class CoarseNode(BaseModel):
-    """A Node/"NetworkStage" in a lumped reaction network"""
-
-    plural_species: list[LumpedSpecies]
-
-
-class CoarseEdge(BaseModel):
-    """An Edge/"ReactionStep" in a detailed PES network"""
-
-    start_node: DetailNode
-    end_node: DetailNode
-    ts_node: DetailNode
-
 
 # Full Schema
+from typing import Literal
+
+from .keys import CitationKey, EntityKey, SpeciesName
+from .rmess import Point, QcCalculation
+from .metadata import Citation, Reference
+from .species import CanonicalEntity, Reaction, Species
+
+from pydantic import BaseModel, Field
+
+
 class Schema(BaseModel):
     """The final schema, encapsulating all information"""
 
-    model_config = ConfigDict(
-        extra="forbid",
-    )
+    ### mechanism view ###
+    species: dict[SpeciesName, Species] = Field(default_factory=dict)
+    """chemical species in the dataset"""
+    entities: dict[EntityKey, CanonicalEntity] = Field(default_factory=dict)
+    """canonical representation of the species in the dataset. InChiKeys are generated including the fixed-H layer"""
+    reactions: list[Reaction] = Field(default_factory=list)
+    """reactions in the dataset"""
 
-    schema_version: Literal["1.0.0b0"]
-    """value of this field is used to determine which version of the schema to
-    validate against
-    """
+
+    ### electronic structure view ###
+    points: list[Point] = Field(default_factory=list)
+    """points in the dataset"""
+    calculations: list[QcCalculation] = Field(default_factory=list)
+    """quantum chemistry calculations"""
+
+    ### metadata ###
+    schema_version: Literal["0.1.0b0"] = "0.1.0b0"
+    """version of the schema used"""
+    license: str
+    """license of this dataset"""
+
+    preferred_citation: Citation|None = None
+    """how this dataset should be cited"""
+    references: list[CitationKey]|None = None
+    """literature describing this dataset, e.g., a set of papers describing how the data was obtained"""
+    literature: dict[CitationKey, Reference] = Field(default_factory=dict)
+    """table of all literature referenced in this file"""
 
 
-if __name__ == "__main__":
-    schema = Schema.model_json_schema()  # (1)!
-    print(json.dumps(schema, indent=2))  # (2)!
+Schema.model_rebuild()
