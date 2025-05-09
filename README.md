@@ -12,12 +12,10 @@ Otherwise, an easy way to create and activate a virtual environment is through
 2. Create virtual environment: `pixi install` (in this directory)
 3. Activate virtual environment: `pixi shell` (in this directory)
 
-## Running the example
+## Validating a file
 
-To test that your environment is working, you can run the example script:
-```
-python example.py
-```
+After installation run `rmmd validate my_file.yaml` to validate a file against
+the RMMD schema.
 
 ## Contributing
 
