@@ -1,4 +1,4 @@
-# RMESS: Reaction Model Electronic Structure Schema
+# Reaction Model Metadata (RMMD)
 
 A repository for drafting a schema for reaction model electronic structure data.
 
