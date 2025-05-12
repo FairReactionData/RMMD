@@ -19,4 +19,12 @@ the RMMD schema.
 
 ## Contributing
 
-Please check the [contribution guidelines](CONTRIBUTING.md) for more details
+Please check the [contribution guidelines](CONTRIBUTING.md) for more details.
+
+### Understanding the Schema
+
+When trying to understand the schema, it may be helpful to check out the [example files](examples/) and compare them to the models in [src/rmmd/](src/rmmd/).
+
+The "entry point" of the schema is the `Schema` model in  [schema.py](src/rmmd/schema.py). It defines the root of an RMMD file and specifies collections of different models such as `Species` or `CanonicalEntity`.
+Hence, a valid RMMD file contains collections of model instances at the root level.
+These instances are referenced elsewhere by the id of the respective instance in the collections. In the case of a `CanonicalEntity` its `EntityKey` is used to reference a specific entity. For example, the `Species` model defined in [species.py](src/rmmd/species.py) uses a list of `EntityKey`s to define a species as an ensemble of `CanonicalEntity`s.
