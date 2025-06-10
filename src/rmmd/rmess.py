@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, PositiveInt, computed_field
+from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
 
+from rmmd.elements import ElementSymbol
 from rmmd.metadata import LocalFile
 from rmmd.keys import CitationKey, PointId, QcCalculationId
 
@@ -55,19 +56,146 @@ class _QcCalculationBase(BaseModel):
     references: list[CitationKey]|None = None
     """literature describing the calculation"""
     source: list[CitationKey|LocalFile]|None = None
-    """source of the data"""
+    """source or location of the full QM data.
 
-class QcCalculationData(_QcCalculationBase):
-    """Data from a quantum chemistry calculation."""
+    Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
+    ioChem-BD, ... The identifier of the source should not point to a whole
+    dataset of calculations, but to a single calculation or file in the
+    dataset."""
+
+class Geometry(BaseModel):
+    """molecular structure/geometry"""
+
+    atoms: list[ElementSymbol]
+    """list of atoms in the molecule, in the same order as the coordinates"""
+    coordinates: list[tuple[float, float, float]]
+    """list of coordinates of the atoms in the molecule, in the same order as
+    the atoms [Ångström]"""
+
+    @model_validator(mode='after')
+    def check_n_atoms(self):
+        """check that the number of atoms matches the number of coordinates"""
+        if len(self.atoms) != len(self.coordinates):
+            raise ValueError("Number of atoms and coordinates must match")
+        return self
+
+class Geometries(BaseModel):
+    """list of geometries with the same order of atoms"""
+
+    atoms: list[ElementSymbol]
+    """list of atoms in the molecule, in the same order as the coordinates"""
+    coordinates: list[list[tuple[float, float, float]]]
+    """list of coordinates of the atoms in the molecule, in the same order as
+    the atoms [Ångström]"""
+    # TODO add field for geometry type (e.g. cartesian, internal, ...)
+
+
+    @model_validator(mode='after')
+    def check_n_atoms(self):
+        """check that the number of atoms matches the number of coordinates"""
+        for coords in self.coordinates:
+            if len(self.atoms) != len(coords):
+                raise ValueError("Number of atoms and coordinates must match")
+        return self
+
+
+class QcOptData(_QcCalculationBase):
+    """Data from a geometry optimization calculation"""
+
+    type: Literal['opt','ts'] = 'opt'
+    """type of the calculation"""
+    geometry: Geometry
+    """geometry of the optimized structure"""
+    total_electronic_energy: float
+    """total electronic energy in Hartree"""
+    gradient: list[tuple[float, float, float]]|None = None
+    """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
+
+class QcFreqData(_QcCalculationBase):
+    """Data from a frequency calculation"""
+
+    type: Literal['freq'] = 'freq'
+    """type of the calculation"""
+    frequencies: list[float]
+    """frequencies in cm^-1"""
+    total_electronic_energy: float
+    """total electronic energy in Hartree"""
+    rot_symmetry_nr: int|None = None
+    """rotational symmetry number"""
+    # TODO: use Å or Bohr radii?
+    hessian: list[list[float]]|None = None
+    """Hessian matrix in atomic units, i.e. second derivatives of the energy
+    w.r.t. the coordinates [Hartree/Å]"""
+
+class QcOptFreqData(_QcCalculationBase):
+    """Data from a geometry optimization calculation with frequencies"""
+
+    type: Literal['opt&freq', 'ts&freq'] = 'opt&freq'
+    """type of the calculation"""
+
+    frequencies: list[float]
+    """frequencies in cm^-1"""
+    geometry: Geometry
+    """geometry of the optimized structure"""
+    total_electronic_energy: float
+    """total electronic energy in Hartree"""
+    gradient: list[tuple[float, float, float]]|None = None
+    """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
+    rot_symmetry_nr: int|None = None
+    """rotational symmetry number"""
+    hessian: list[list[float]]|None = None
+    """Hessian matrix in atomic units, i.e. second derivatives of the energy
+    w.r.t. the coordinates [Hartree/Å]"""
 
     # TODO add field, e.g. similar to how cclib, QCarchive, ... (focus on most important fields such as geometry, total electronic energy, frequencies, ...)
 
-class QcCalculationReference(_QcCalculationBase):
-    """referecne to a quantum chemistry calculation in a public dataset"""
+class QcSpeData(_QcCalculationBase):
+    """Data from a single-point energy calculation"""
 
-    source: list[CitationKey]    # type: ignore # non-optional
+    type: Literal['spe'] = 'spe'
+    """type of the calculation"""
+    total_electronic_energy: float
+    """total electronic energy in Hartree"""
+
+class QcIrcData(_QcCalculationBase):
+    """Data from an intrinsic reaction coordinate scan in a single direction"""
+
+    type: Literal['irc'] = 'irc'
+    """type of the calculation"""
+    points: Geometries
+    """geometries along the IRC path (inlcuding the transition state)"""
+    total_electronic_energies: list[float]
+    """list of total electronic energies in Hartree for each point in the IRC path"""
+
+    @model_validator(mode='after')
+    def check_n_points(self):
+        """check that the number of points matches the number of energies"""
+        if len(self.points.coordinates) != len(self.total_electronic_energies):
+            raise ValueError("Number of points and energies must match")
+        return self
+
+class QcMultiCalculationData(_QcCalculationBase):
+    """Data from multi step calculations, e.g. Gaussian jobs with several --Link1-- steps, an ORCA compound job, or an IRC scan in both directions"""
+
+    type: Literal['nested'] = 'nested'
+    """type of the calculation"""
+    # no need to use calculation id as the inner calculations are part of this
+    # calculation and should be referenced by this calculation's id
+    calculations: list[QcCalculationData]
+    """list of calculations that are part of this nested calculation"""
+
+class QcCalculationReference(_QcCalculationBase):
+    """reference to a quantum chemistry calculation in a public dataset"""
+
+    # making the type hint more specific in the child class (in this case
+    # non-optional) is allowed in pydantic but may be flagged by a type checker
+    source: list[CitationKey]    # type: ignore
     """references to the data itself"""
 
+QcCalculationData = Annotated[QcOptData|QcFreqData|QcOptFreqData|QcIrcData
+                              |QcSpeData|QcMultiCalculationData,
+                              Field(discriminator='type')]
+"""Data from a quantum chemistry calculation."""
 QcCalculation = Annotated[QcCalculationData|QcCalculationReference,
                           Field()]
 """quantum chemistry calculation"""

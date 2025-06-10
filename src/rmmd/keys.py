@@ -2,10 +2,12 @@
 
 The use of local names/ids/keys is an implementation detail of the validation schema and realized differently in, e.g., a database. Here, we use names to avoid hierarchical structure and repetitions. This module is a separate module to avoid circular imports.
 """
-from pydantic import Field
+from pydantic import Field, RootModel, model_validator
 
 
 from typing import Annotated
+from pydantic import validator
+from typing import Tuple
 
 
 CitationKey = Annotated[str, Field(min_length=1,
@@ -26,7 +28,33 @@ EntityKey = Annotated[str, Field(min_length=27, max_length=27,
                                    )]
 """key for a canonical representation of a species in the dataset, currently: InChIKey with fixed-H layer"""
 
-QcCalculationId = int
-"""index of calculation in the list of calculations"""
+class QcCalculationId(RootModel[int|tuple[int, int]]):
+    """index of calculation in the list of calculations.
+
+    Since multiple calculation jobs can be performed in a single run for many
+    quantum chemistry softwares, the id can be either a single integer
+    or a tuple of two integers."""
+
+    @model_validator(mode='before')
+    def convert_from_string(cls, value: str) -> tuple[int, int]|int:
+        """A string "x.y" is converted to a tuple (x, y) or just x if y is not
+        present."""
+        if isinstance(value, str):
+            parts = value.split('.')
+
+            for part in parts:
+                if not part.isdigit():
+                    raise ValueError("All parts must be integers")
+
+            if len(parts) == 2:
+                return int(parts[0]), int(parts[1])
+            elif len(parts) == 1:
+                return int(parts[0])
+            else:
+                raise ValueError("Invalid format, expected 'X.Y' or 'X'")
+        return value
+
 PointId = int
 """index of point in the list of points"""
+
+
