@@ -8,8 +8,8 @@ from typing import Annotated, Literal, TypeAlias
 from pydantic import BaseModel, Field
 
 from .thermo import SpeciesThermo
-from .rmess import ElectronicState, PesReaction, Point
-from .keys import CitationKey, EntityKey, SpeciesName
+from .rmess import ElectronicState, PesReaction
+from .keys import CitationKey, EntityKey, PointId, SpeciesName
 
 
 class Species(BaseModel):
@@ -19,7 +19,7 @@ class Species(BaseModel):
     """human-readable name of the species. This is not a unique identifier,
     but can be used to identify the species in a human-readable way.
     """
-    entities: list[EntityKey]
+    entities: list[EntityKey] = Field(min_length=1)
     """a species is an ensemble of molecular entities. If the molecular
     entities can be described using only canonical representations, there
     automatically is a canonical representation for the species.
@@ -43,7 +43,7 @@ class CanonicalEntity(BaseModel):
     stereo: Stereochemistry|None = None
     electronic_state: ElectronicState|None = None
     """usually the ground state is assumed"""
-    points: list[Point]|Literal['all'] = 'all'
+    points: list[PointId]|Literal['all'] = 'all'
     """list of points on a PES that correspond to this molecular entity. If not
     "all", the representation is not canonical -> use carefully!"""
 
