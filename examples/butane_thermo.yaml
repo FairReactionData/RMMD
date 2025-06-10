@@ -39,7 +39,7 @@ points:
       frequencies: 0  # from calculation 0
       spe: 2  # from calculation 2
       frequency_scaling: 0.99
-      symmetry_nr: 1
+      rot_symmetry_nr: 1
   - domain:
       constitution: {C: 4, H: 10}
       electronic_state: {charge: 0, spin: 0}
@@ -50,7 +50,7 @@ points:
       frequencies: 1  # from calculation 0
       spe: 3  # from calculation 2
       frequency_scaling: 0.99
-      symmetry_nr: 1
+      rot_symmetry_nr: 1
 calculations:
   - level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
