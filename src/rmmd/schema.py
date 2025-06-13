@@ -3,8 +3,8 @@
 from typing import Literal
 
 from .keys import CitationKey, EntityKey, SpeciesName
-from .rmess import Point, QcCalculation
-from .metadata import Citation, Reference
+from .rmess import Point, QmCalculation
+from .metadata import Citation, CitationKeyOrDirectReference, Reference
 from .species import CanonicalEntity, Reaction, Species
 
 from pydantic import BaseModel, Field
@@ -25,7 +25,7 @@ class Schema(BaseModel):
     ### electronic structure view ###
     points: list[Point] = Field(default_factory=list)
     """points in the dataset"""
-    calculations: list[QcCalculation] = Field(default_factory=list)
+    calculations: list[QmCalculation] = Field(default_factory=list)
     """quantum chemistry calculations"""
 
     ### metadata ###
@@ -36,7 +36,7 @@ class Schema(BaseModel):
 
     preferred_citation: Citation|None = None
     """how this dataset should be cited"""
-    references: list[CitationKey]|None = None
+    references: list[CitationKeyOrDirectReference]|None = None
     """literature describing this dataset, e.g., a set of papers describing how the data was obtained"""
     literature: dict[CitationKey, Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""

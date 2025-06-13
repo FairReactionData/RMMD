@@ -7,9 +7,10 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
 
+from .metadata import CitationKeyOrDirectReference
 from .thermo import SpeciesThermo
 from .rmess import ElectronicState, PesReaction
-from .keys import CitationKey, EntityKey, PointId, SpeciesName
+from .keys import EntityKey, PointId, SpeciesName
 
 
 class Species(BaseModel):
@@ -83,7 +84,7 @@ class ReactionDefinition(BaseModel):
     edges
     """
 
-    references: list[CitationKey]|None = None
+    references: list[CitationKeyOrDirectReference]|None = None
     """Literature reference where the detailed data was combined to a
     phenomenological reaction (rate). """
     pes_reaction: PesReaction

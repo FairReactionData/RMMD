@@ -6,15 +6,18 @@ from pydantic import Field, RootModel, model_validator
 
 
 from typing import Annotated
-from pydantic import validator
-from typing import Tuple
-
 
 CitationKey = Annotated[str, Field(min_length=1,
-                                   pattern="^[a-zA-Z0-9-.]+$",
+                                   # Often, either citation keys or direct
+                                   # references via a URL or a local path can
+                                   # be used. Both are strings and need to be
+                                   # distinguished. Hence, the pattern is
+                                   # relatively strict.
+                                   pattern="^[a-zA-Z0-9][a-zA-Z0-9-.]*$",
                                    examples=["arrhenius1889"],
                                    )]
-"""key for a literature reference"""
+"""key for a literature reference. Has to begin with an alphanumeric character.
+"""
 
 SpeciesName = Annotated[str, Field(min_length=1,
                                    max_length=16,  # from CHEMKIN II
