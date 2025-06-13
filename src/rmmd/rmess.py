@@ -10,8 +10,8 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
 
 from rmmd.elements import ElementSymbol
-from rmmd.metadata import LocalFile
-from rmmd.keys import CitationKey, PointId, QcCalculationId
+from rmmd.metadata import CitationKeyOrDirectReference
+from rmmd.keys import PointId, QcCalculationId
 
 
 class ElectronicState(BaseModel):
@@ -34,34 +34,90 @@ class ElectronicState(BaseModel):
         """spin multiplicity, i.e. 2S+1"""
         return 2*self.spin+1
 
+LevelOfTheory = Annotated[str, Field(  # in v1.0 just a string
+    description="Level of theory used for the quantum chemistry calculation.",
+    examples=["B3LYP-G-D3BJ/6-31G(d)",
+              "DLPNO-CCSD(T)/cc-pVnZ-CBS",
+              "GFN2-xTB"],
+    pattern=r"^\S+[\/\S+]?$",
+)]
+
 ###############################################################################
 # Quantum chemistry calculations & their metadata
 ###############################################################################
+
 class Software(BaseModel):
     """computer software used to perform a calculation"""
 
     name: str
     version: str
 
-class _QcCalculationBase(BaseModel):
+class _QmCalculationDataBase(BaseModel):
     """base class for quantum chemistry calculations"""
 
-    level_of_theory: str # in v1.0 just a string
+    level_of_theory: LevelOfTheory
     """level of theory used"""
     electronic_state: ElectronicState
     """..."""
     software: Software|None = None
     """..."""
 
-    references: list[CitationKey]|None = None
+    references: list[CitationKeyOrDirectReference]|None = None
     """literature describing the calculation"""
-    source: list[CitationKey|LocalFile]|None = None
+    source: list[CitationKeyOrDirectReference]|None = None
     """source or location of the full QM data.
 
     Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
     ioChem-BD, ... The identifier of the source should not point to a whole
     dataset of calculations, but to a single calculation or file in the
     dataset."""
+
+class QmCalculationReference(BaseModel):
+    """reference to a quantum chemistry calculation in a public dataset"""
+
+    type: Literal['reference'] = 'reference'
+    # for references this metadata is optional as we assume that the referenced
+    # dataset already contains the metadata
+    level_of_theory: LevelOfTheory|None = None
+    """level of theory used"""
+    electronic_state: ElectronicState|None = None
+    """electronic state of the calculation"""
+    software: Software|None = None
+    """..."""
+
+    references: list[CitationKeyOrDirectReference]|None = None
+    """literature describing the calculation"""
+    source: list[CitationKeyOrDirectReference]
+    """source or location of the QM calculation's data.
+
+    Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
+    ioChem-BD, ... The identifier of the source should not point to a whole
+    dataset of calculations, but to a single calculation or file in the
+    dataset."""
+
+class QmMultiCalculationData(BaseModel):
+    """Data from multi step calculations, e.g. Gaussian jobs with several --Link1-- steps, an ORCA compound job, or an IRC scan in both directions"""
+
+    type: Literal['nested'] = 'nested'
+    """type of the calculation"""
+    # no need to use calculation id as the inner calculations are part of this
+    # calculation and should be referenced by this calculation's id
+    calculations: list[QmCalculationData]
+    """list of calculations that are part of this nested calculation"""
+
+    software: Software|None = None
+    """..."""
+
+    references: list[CitationKeyOrDirectReference]|None = None
+    """literature describing the calculation"""
+    source: list[CitationKeyOrDirectReference]|None = None
+    """source or location of the full QM data.
+
+    Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
+    ioChem-BD, ... The identifier of the source should not point to a whole
+    dataset of calculations, but to a single calculation or file in the
+    dataset."""
+
 
 class Geometry(BaseModel):
     """molecular structure/geometry"""
@@ -98,8 +154,7 @@ class Geometries(BaseModel):
                 raise ValueError("Number of atoms and coordinates must match")
         return self
 
-
-class QcOptData(_QcCalculationBase):
+class QmOptData(_QmCalculationDataBase):
     """Data from a geometry optimization calculation"""
 
     type: Literal['opt','ts'] = 'opt'
@@ -111,7 +166,7 @@ class QcOptData(_QcCalculationBase):
     gradient: list[tuple[float, float, float]]|None = None
     """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
 
-class QcFreqData(_QcCalculationBase):
+class QmFreqData(_QmCalculationDataBase):
     """Data from a frequency calculation"""
 
     type: Literal['freq'] = 'freq'
@@ -127,7 +182,7 @@ class QcFreqData(_QcCalculationBase):
     """Hessian matrix in atomic units, i.e. second derivatives of the energy
     w.r.t. the coordinates [Hartree/Å]"""
 
-class QcOptFreqData(_QcCalculationBase):
+class QmOptFreqData(_QmCalculationDataBase):
     """Data from a geometry optimization calculation with frequencies"""
 
     type: Literal['opt&freq', 'ts&freq'] = 'opt&freq'
@@ -149,7 +204,7 @@ class QcOptFreqData(_QcCalculationBase):
 
     # TODO add field, e.g. similar to how cclib, QCarchive, ... (focus on most important fields such as geometry, total electronic energy, frequencies, ...)
 
-class QcSpeData(_QcCalculationBase):
+class QmSpeData(_QmCalculationDataBase):
     """Data from a single-point energy calculation"""
 
     type: Literal['spe'] = 'spe'
@@ -157,7 +212,7 @@ class QcSpeData(_QcCalculationBase):
     total_electronic_energy: float
     """total electronic energy in Hartree"""
 
-class QcIrcData(_QcCalculationBase):
+class QmIrcData(_QmCalculationDataBase):
     """Data from an intrinsic reaction coordinate scan in a single direction"""
 
     type: Literal['irc'] = 'irc'
@@ -174,31 +229,22 @@ class QcIrcData(_QcCalculationBase):
             raise ValueError("Number of points and energies must match")
         return self
 
-class QcMultiCalculationData(_QcCalculationBase):
-    """Data from multi step calculations, e.g. Gaussian jobs with several --Link1-- steps, an ORCA compound job, or an IRC scan in both directions"""
-
-    type: Literal['nested'] = 'nested'
-    """type of the calculation"""
-    # no need to use calculation id as the inner calculations are part of this
-    # calculation and should be referenced by this calculation's id
-    calculations: list[QcCalculationData]
-    """list of calculations that are part of this nested calculation"""
-
-class QcCalculationReference(_QcCalculationBase):
-    """reference to a quantum chemistry calculation in a public dataset"""
-
-    # making the type hint more specific in the child class (in this case
-    # non-optional) is allowed in pydantic but may be flagged by a type checker
-    source: list[CitationKey]    # type: ignore
-    """references to the data itself"""
-
-QcCalculationData = Annotated[QcOptData|QcFreqData|QcOptFreqData|QcIrcData
-                              |QcSpeData|QcMultiCalculationData,
+QmCalculationData = Annotated[QmOptData|QmFreqData|QmOptFreqData|QmIrcData
+                              |QmSpeData|QmMultiCalculationData,
                               Field(discriminator='type')]
 """Data from a quantum chemistry calculation."""
-QcCalculation = Annotated[QcCalculationData|QcCalculationReference,
-                          Field()]
-"""quantum chemistry calculation"""
+
+QmCalculation = Annotated[QmCalculationData|QmCalculationReference,
+                          Field(discriminator='type')]
+"""There are two ways to supply quantum chemistry data, either directly by
+providing the geometries, frequencies, ..., or as a reference to a public
+dataset hosted elsewhere. This allows RMMD to focus on data relevant to gas
+kinetics and mechanism modeling, while users can still publish the full quantum
+chemistry data "FAIRly" on a specialized platforms with a more detailed
+computational chemistry schema. Including such a schema in RMMD would
+unnecessarily complicate the RMMD schema. When supplying the data directly,
+one may still reference a public dataset, but this is not required.
+"""
 
 
 ###############################################################################
