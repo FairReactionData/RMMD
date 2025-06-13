@@ -2,7 +2,7 @@
 description: How to represent thermochemistry data using Butane as an example
 # schema_part: schema.Schema  - not needed for this example (schema.Schema is
 #                               the default); used to test against a subschema
-failure: null   # valid file
+failures: []   # fully valid file
 --- # actual example
 schema_version: 0.1.0b0
 license: MIT
@@ -52,25 +52,29 @@ points:
       frequency_scaling: 0.99
       rot_symmetry_nr: 1
 calculations:
-  - level_of_theory: "B3LYP-D3BJ/def2-TZVP"
+  - type: reference
+    level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     source: ["./data/butane_opt_trans.log"]
-  - level_of_theory: "B3LYP-D3BJ/def2-TZVP"
+  - type: reference
+    level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     source: ["./data/butane_opt_gauche.log"]
-  - level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
+  - type: reference
+    level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     source: ["./data/butane_spe_trans.log"]
-  - level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
+  - type: reference
+    level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
