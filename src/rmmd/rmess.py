@@ -124,7 +124,7 @@ class Geometry(BaseModel):
 
     atoms: list[ElementSymbol]
     """list of atoms in the molecule, in the same order as the coordinates"""
-    coordinates: list[tuple[float, float, float]]
+    coordinates: list[list[float]]
     """list of coordinates of the atoms in the molecule, in the same order as
     the atoms [Ångström]"""
 
@@ -135,15 +135,21 @@ class Geometry(BaseModel):
             raise ValueError("Number of atoms and coordinates must match")
         return self
 
+    @model_validator(mode='after')
+    def check_geometry_dimensions(self):
+        """check that all atoms have 3 cartesian coordinates"""
+        for coord in self.coordinates:
+            if len(coord) != 3:
+                raise ValueError("Each atom must have 3 cartesian coordinates")
+        return self
 class Geometries(BaseModel):
     """list of geometries with the same order of atoms"""
 
     atoms: list[ElementSymbol]
     """list of atoms in the molecule, in the same order as the coordinates"""
-    coordinates: list[list[tuple[float, float, float]]]
+    coordinates: list[list[list[float]]]
     """list of coordinates of the atoms in the molecule, in the same order as
     the atoms [Ångström]"""
-    # TODO add field for geometry type (e.g. cartesian, internal, ...)
 
 
     @model_validator(mode='after')
@@ -153,6 +159,22 @@ class Geometries(BaseModel):
             if len(self.atoms) != len(coords):
                 raise ValueError("Number of atoms and coordinates must match")
         return self
+
+    @model_validator(mode='after')
+    def check_geometry_dimensions(self):
+        """check that all atoms have 3 cartesian coordinates"""
+        for coords in self.coordinates:
+            for coord in coords:
+                if len(coord) != 3:
+                    raise ValueError("Each atom must have 3 cartesian "
+                                     "coordinates")
+        return self
+
+class _GeometryTest(BaseModel):
+    """class for testing the Geometry and Geometries classes"""
+
+    geometry_list: list[Geometry]
+    geometries_list: list[Geometries]
 
 class QmOptData(_QmCalculationDataBase):
     """Data from a geometry optimization calculation"""
