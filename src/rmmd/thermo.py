@@ -91,7 +91,7 @@ class Rrho(_ThermoPropertyBase):
     frequency_scaling: float  # TODO value + type + source
     quasi_harmonic_approx: str|None = None
     spe: QcCalculationId
-    symmetry_nr: int  # TODO source + value
+    rot_symmetry_nr: int  # TODO source + value
     """rotational symmetry number"""
     software: Software|None = None
     """software used to perform the calculation"""

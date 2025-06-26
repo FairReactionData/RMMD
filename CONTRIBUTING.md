@@ -25,7 +25,24 @@ So, when adding new models/classes, please add corresponding tests/examples.
 > [!TIP]
 > It may be easier to start with test/example files first to understand how the schema will be used before writing the Pydantic model.
 
-For each example file, include a metadata block at the beginning that describes the test and specifies if and how validation should fail (see [examples/minimal.yaml](examples/minimal.yaml)).
+For each example file, include a metadata block at the beginning that describes the test and specifies, if and how validation should fail.
+Expected validation errors are provided as a list of pairs of strings called failures:
+
+``` yaml
+--- # test setup
+description: "Here, one can describe the test"
+failures:   # expected failures can be provided as a tuple of a location in the
+            # data and a regular expression that matches the expected error
+            # message
+  - ["species.CH4.entities", "List should have at least 1 item after validation, not 0"]
+--- # begin of the actual example
+schema_version: 0.1.0b0
+license: MIT
+species:
+  CH4:
+    name: CH4
+    entities: []  # empty list is not allowed  (see expected error above)
+```
 
 ## Conventions
 

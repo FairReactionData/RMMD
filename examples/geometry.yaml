@@ -1,0 +1,73 @@
+--- # test setup
+description: Test geometry model.
+schema_part: rmess._GeometryTest # test only the geometry model
+failures:
+  - [geometry_list.1, "Value error, Number of atoms and coordinates must match"]
+  - [geometry_list.2, "Value error, Each atom must have 3 cartesian coordinates"]
+  - [geometry_list.3, "Value error, Each atom must have 3 cartesian coordinates"]
+  - [geometry_list.4.atoms.1, "Input should be 'H', 'He', .*"]
+  - [geometries_list.1, "Value error, Number of atoms and coordinates must match"]
+--- # actual example
+geometry_list:
+  - # valid geometry (caffeine)
+    atoms: [C, N, C, N, C, C, C, O, N, C, O, N, C, C, H, H, H, H,
+            H, H, H, H, H, H]
+    coordinates: [[ 1.06857576,  0.05228385, -0.07555873],
+                  [ 2.50289413,  0.03372681, -0.07545152],
+                  [ 3.35343472,  1.07448722, -0.07744078],
+                  [ 4.62128616,  0.72044753, -0.07700666],
+                  [ 4.59669113, -0.63039024, -0.07455939],
+                  [ 3.28944812, -1.09510377, -0.07354947],
+                  [ 2.96268935, -2.48854799, -0.07033825],
+                  [ 1.84931321, -2.97819705, -0.06922873],
+                  [ 4.12159535, -3.27050134, -0.06833352],
+                  [ 5.44245412, -2.83895262, -0.06993731],
+                  [ 6.3577458 , -3.63259038, -0.0684799 ],
+                  [ 5.66003313, -1.47680464, -0.07321696],
+                  [ 7.00859393, -0.95398212, -0.07489564],
+                  [ 3.9539207 , -4.71486486, -0.0642129 ],
+                  [ 0.72070441,  1.08353195, -0.07569364],
+                  [ 0.68937842, -0.46619127,  0.8062394 ],
+                  [ 0.68942871, -0.46632018, -0.95732644],
+                  [ 3.02732911,  2.09550458, -0.07913974],
+                  [ 7.69283281, -1.79987568, -0.07534066],
+                  [ 7.16512414, -0.33930552,  0.81116495],
+                  [ 7.16294884, -0.33992108, -0.96174195],
+                  [ 2.88625548, -4.92145346, -0.06264416],
+                  [ 4.42621942, -5.13894228,  0.82139546],
+                  [ 4.42450198, -5.14394098, -0.94832363]]
+  - # invalid (n_atoms is inconsistent)
+    atoms: [H, H, O]
+    coordinates: [[0.0, 0.0, 0.0],
+                  [1.0, 1.0, 1.0]]
+  - # invalid (coordinates is inconsistent)
+    atoms: [H, H, O]
+    coordinates: [[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [2.0, 2.0]]
+  - # invalid (coordinates has wrong shape)
+    atoms: [H, H]
+    coordinates: [[0.0, 0.0], [1.0, 1.0]]
+  - atoms: [H, Pi] # invalid: Pi is not a valid atom symbol
+    coordinates: [[0.0, 0.0, 0.0],
+                  [1.0, 1.0, 1.0]]
+  - atoms: [H, H] # invalid, wrong type
+    coordinates: [[0.0, 0.0, "0.0"],
+                  [1.0, 1.0, 1.0]]
+geometries_list:
+  - # valid
+    atoms: [H, H]
+    coordinates: [
+      [[0.0, 0.0, 0.0],
+       [0.0, 0.0, 0.7]],
+      [[0.0, 0.0, 0.0],
+       [0.0, 0.0, 0.74]],
+      [[0.0, -0.552, 0.0],
+       [0.552, 0.0, 0.0]],
+      [[0.0, 0.8, 0.0],
+       [0.0, 0.0, 0.0]],
+    ]
+  - # invalid (n_atoms is inconsistent)
+    atoms: [H, H, O]
+    coordinates:
+      [[[0.0, 0.0, 0.0],
+        [1.0, 1.0, 1.0]],
+       [[2.0, 2.0, 2.0]]]

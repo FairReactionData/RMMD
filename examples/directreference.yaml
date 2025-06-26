@@ -1,0 +1,32 @@
+--- # test setup
+description: Contains all types of jobs with toy data.
+schema_part: metadata._DirectReferenceTest # this special model allows defining
+                # a list of direct references so we include multiple test cases
+                # in this one file
+failures:
+  - ['0.HttpUrlReference',  # since we use a discriminated union, the model is
+                            # part of the location
+    'Value error, HandleNet identifiers should be provided as full URLs.*']
+  - ['1.HandleNet', 'String should match pattern .*handle\\\.net.*']
+  - ['2.HttpUrlReference', 'Value error, DOIs should be provided as full URLs starting with https']
+  - ['3.HttpUrlReference', 'Value error, DOIs should follow the format https:\/\/doi\.org\/10\.xxxx\/\.\.\. ']
+  - ['4.Doi', 'String should match pattern.*']
+  - ['7', 'Could not determine the type of direct reference.*']
+  - ['9', 'Could not determine the type of direct reference.*']
+  - ['10', 'Could not determine the type of direct reference.*'] # absolute paths not allowed
+  - ['11.HttpUrlReference', 'Value error, HandleNet identifiers should be provided as full URLs starting with https.*'] # absolute paths not allowed
+--- # actual example
+- "http://hdl.handle.net/10.1234/abcd" # invalid: http instead of https
+- "https://hdl.handle.net/10.1234/abcd" # invalid DOI with handle.net resolver
+                                        # instead of doi.org
+- "http://doi.org/10.1234" # invalid: http instead of https
+- "https://www.doi.org/10.1234/abcd" #invalid: www.doi.org instead of doi.org
+- "https://doi.org/11.1234" # invalid: DOI starting with 11 instead of 10
+- "http://example.com/" # valid
+- "https://example.com/some/path/to/file.txt" # valid
+- "example.com" # invalid: no URL scheme, i.e., no http(s) or file://
+- "./path/to/local/file.txt" # valid
+- "/absolute/path/to/local/file.txt" # invalid: absolute paths not allowed
+- "file:///path/to/local/file.txt" # invalid: absolute path not allowed
+- "http://hdl.handle.net/1001" # invalid: http instead of https
+
