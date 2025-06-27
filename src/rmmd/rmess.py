@@ -9,9 +9,9 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
 
-from rmmd.elements import ElementSymbol
-from rmmd.metadata import CitationKeyOrDirectReference
-from rmmd.keys import PointId, QcCalculationId
+from .elements import ElementSymbol
+from .metadata import CitationKeyOrDirectReference
+from .keys import PointId, QcCalculationId
 
 
 class ElectronicState(BaseModel):

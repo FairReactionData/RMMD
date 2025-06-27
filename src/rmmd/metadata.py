@@ -4,7 +4,7 @@ Citation-related metadata
 
 from typing import Annotated
 from pydantic import AfterValidator, AnyUrl, BaseModel, Discriminator, Field, RootModel, Tag, UrlConstraints
-from rmmd.keys import CitationKey
+from .keys import CitationKey
 
 # Note: In order to use CitationKeyOrDirectReference (below), any direct
 # reference needs to be distinguishable from a citation key, i.e., it must not
