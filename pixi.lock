@@ -828,7 +828,7 @@ packages:
 - pypi: ./
   name: rmmd
   version: 0.1.0b0
-  sha256: 26dc8c2a8671c7e71bca171f91eda9cc9d510804f109262594d34df85f3da53c
+  sha256: 7cb6c0217c6a5d6f25ccbbb0bde3853800463a89b2e5e1efa609f6232d5a35a0
   requires_dist:
   - pydantic>=2.10.0,<3
   - pyyaml>=5.4.1,<7
