@@ -1,6 +1,6 @@
 --- # test setup
 description: Test geometry model.
-schema_part: rmess._GeometryTest # test only the geometry model
+schema_part: pes._GeometryTest # test only the geometry model
 failures:
   - [geometry_list.1, "Value error, Number of atoms and coordinates must match"]
   - [geometry_list.2, "Value error, Each atom must have 3 cartesian coordinates"]

@@ -3,7 +3,7 @@
 from typing import Literal
 
 from .keys import CitationKey, EntityKey, SpeciesName
-from .rmess import Point, QmCalculation
+from .pes import Point, QmCalculation
 from .metadata import Citation, CitationKeyOrDirectReference, Reference
 from .species import CanonicalEntity, Reaction, Species
 

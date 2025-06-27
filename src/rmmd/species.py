@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from .metadata import CitationKeyOrDirectReference
 from .thermo import SpeciesThermo
-from .rmess import ElectronicState, PesReaction
+from .pes import ElectronicState, PesReaction
 from .keys import EntityKey, PointId, SpeciesName
 
 

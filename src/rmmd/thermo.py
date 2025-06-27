@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
-from .rmess import PointEnsemble, Software
+from .pes import PointEnsemble, Software
 from .keys import CitationKey, QcCalculationId
 
 class _ThermoPropertyBase(BaseModel):
