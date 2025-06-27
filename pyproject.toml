@@ -28,7 +28,7 @@ rmmd = { path = ".", editable = true }
 [tool.pixi.tasks]
 
 [dependency-groups]
-dev = ["ipykernel"]
+dev = ["ipykernel", "ruff>=0.12.1,<0.13"]
 
 [tool.pixi.environments]
 dev = ["dev"]
