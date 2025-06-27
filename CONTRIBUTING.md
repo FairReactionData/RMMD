@@ -17,6 +17,17 @@ To know which work packages are open for contribution, please refer to our issue
 > Details regarding decision-making and review processes are still to be determined. We encourage open discussions around design choices.
 
 
+## Linting & Formatting
+
+Linting and formatting is done with [ruff](https://docs.astral.sh/ruff/) using [pre-commit](https://pre-commit.com/) hooks.
+If you have the `dev` dependencies in stalled, you can run these pre-commit hooks as follows.
+```
+pre-commit run --all-files
+```
+If you are using the Pixi environment, you can also do `pixi run -e dev lint` (or just `pixi run lint` inside the dev environment).
+
+These hooks are also run with GitHub Actions, so make sure they pass locally before submitting a PR.
+
 ## Testing & Examples
 
 Testing is crucial for maintaining quality across all parts of the schema. We utilize example YAML files located in the `examples/` directory to test the schema. You simply need to run pytest to test the example files. These example files also serve as documentation during this early stage of development.
