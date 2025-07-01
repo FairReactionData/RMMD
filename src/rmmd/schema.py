@@ -1,9 +1,8 @@
-
 # Full Schema
 from typing import Literal
 
 from .keys import CitationKey, EntityKey, SpeciesName
-from .rmess import Point, QmCalculation
+from .pes import Point, QmCalculation
 from .metadata import Citation, CitationKeyOrDirectReference, Reference
 from .species import CanonicalEntity, Reaction, Species
 
@@ -21,7 +20,6 @@ class Schema(BaseModel):
     reactions: list[Reaction] = Field(default_factory=list)
     """reactions in the dataset"""
 
-
     ### electronic structure view ###
     points: list[Point] = Field(default_factory=list)
     """points in the dataset"""
@@ -34,9 +32,9 @@ class Schema(BaseModel):
     license: str
     """license of this dataset"""
 
-    preferred_citation: Citation|None = None
+    preferred_citation: Citation | None = None
     """how this dataset should be cited"""
-    references: list[CitationKeyOrDirectReference]|None = None
+    references: list[CitationKeyOrDirectReference] | None = None
     """literature describing this dataset, e.g., a set of papers describing how the data was obtained"""
     literature: dict[CitationKey, Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""

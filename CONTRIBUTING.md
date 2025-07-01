@@ -17,6 +17,22 @@ To know which work packages are open for contribution, please refer to our issue
 > Details regarding decision-making and review processes are still to be determined. We encourage open discussions around design choices.
 
 
+## Linting & Formatting
+
+Linting and formatting is done with [ruff](https://docs.astral.sh/ruff/) using [pre-commit](https://pre-commit.com/) hooks.
+This will auto-format your code to adhere to a consistent standard, so that you do not
+have to think much about things like whitespace and line length.
+If you have the `dev` dependencies installed, you can run these pre-commit hooks as follows.
+```
+pre-commit run --all-files
+```
+If you are using the Pixi environment, you can also do `pixi run -e dev lint` (or just `pixi run lint` inside the dev environment).
+
+Since the format check also auto-formats your code, you should see a green check mark
+for the format if you run it a second time.
+
+These hooks are also run with GitHub Actions, so make sure they pass locally before submitting a PR.
+
 ## Testing & Examples
 
 Testing is crucial for maintaining quality across all parts of the schema. We utilize example YAML files located in the `examples/` directory to test the schema. You simply need to run pytest to test the example files. These example files also serve as documentation during this early stage of development.
@@ -48,8 +64,12 @@ species:
 
 ### General Guidelines
 
-- Adhere to the [PEP8 Style Guide](https://peps.python.org/pep-0008/) unless otherwise specified in this document.
 - Use [Sphinx-style](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html) docstrings for all public methods and classes.
+- Other specific standards for this project will be spelled out in this document.
+- Otherwise, please rely on the `pre-commit` formatting and linting hooks described
+above. The [Ruff](https://docs.astral.sh/ruff/) format imposed by these hooks is broadly
+consistent with the [PEP8 Style Guide](https://peps.python.org/pep-0008/), which may be
+worth consulting if you are new to Python.
 
 ### Units
 

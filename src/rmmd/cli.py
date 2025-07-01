@@ -2,7 +2,7 @@
 
 import click
 from pydantic import ValidationError
-from rmmd.schema import Schema
+from .schema import Schema
 import yaml
 
 

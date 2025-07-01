@@ -1,5 +1,3 @@
-
-
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
@@ -12,10 +10,11 @@ class _RateCoefficientBase(BaseModel):
     type: str
     """unique identifier for the type of rate coefficient"""
 
-    references: list[CitationKey]|None = None
+    references: list[CitationKey] | None = None
     """Related literature describing how the data was obtained. Can be used in addition to the references list of the main dataset/Schema."""
     source: list[CitationKey]
     """Literature reference where the data was obtained from."""
+
 
 class ModifiedArrhenius(_RateCoefficientBase):
     """Modified Arrhenius rate coefficient"""
@@ -29,6 +28,7 @@ class ModifiedArrhenius(_RateCoefficientBase):
     Ea: float
     """activation energy in J/mol"""
 
+
 class RateTable(_RateCoefficientBase):
     """Rate coefficient table for a specific reaction"""
 
@@ -36,10 +36,11 @@ class RateTable(_RateCoefficientBase):
 
     T: list[float]
     """Temperature points in K"""
-    p: list[float]|float
+    p: list[float] | float
     """Pressure points in Pa"""
     k: list[float]
     """rate coefficients in SI units"""
+
 
 # TODO add rates from TST, master equation, etc.
 

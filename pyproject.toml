@@ -26,9 +26,10 @@ platforms = ["linux-64"]
 rmmd = { path = ".", editable = true }
 
 [tool.pixi.tasks]
+lint = "pre-commit run --all-files"
 
 [dependency-groups]
-dev = ["ipykernel"]
+dev = ["ipykernel", "ruff>=0.12.1,<0.13", "pre-commit>=4.2.0,<5"]
 
 [tool.pixi.environments]
 dev = ["dev"]
