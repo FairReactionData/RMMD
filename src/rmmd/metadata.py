@@ -58,7 +58,7 @@ def check_if_consistent_doi_or_handle(url: AnyUrl) -> AnyUrl:
     elif url.host == "hdl.handle.net" and url.scheme != "https":
         raise ValueError(
             "HandleNet identifiers should be provided as full URLs "
-            "starting with https://hdl.handle.net/... "
+            "starting with https://hdl.handle.net/..."
         )
 
     return url

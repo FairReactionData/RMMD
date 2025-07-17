@@ -2,8 +2,9 @@
 
 
 import re
-from typing import Any
-from pydantic import BaseModel, ValidationError
+from typing import Any, Self
+from pydantic import BaseModel, ValidationError, model_validator
+from pydantic_core import ErrorDetails
 import pytest
 
 def _err_loc_str(loc: tuple[str | int, ...]) -> str:
@@ -18,10 +19,52 @@ def _err_loc_str(loc: tuple[str | int, ...]) -> str:
 
     return loc_str
 
+class ExpectedError(BaseModel):
+    """Expected validation error for a model validation test."""
+
+    loc: tuple[str | int, ...]
+    """Location of the error in the data structure."""
+    msg: str | None = None
+    """Expected error message.
+
+    Either msg or msg_pattern must be provided."""
+    msg_pattern: str | None = None
+    """regex pattern to match against the error message.
+
+    Either msg or msg_pattern must be provided."""
+
+    @model_validator(mode='after')
+    def check_either_msg_or_pattern_existing(self) -> Self:
+        """Ensure that either msg or msg_pattern is provided."""
+        if self.msg is None != self.msg_pattern is None:
+            raise ValueError(
+                "Either 'msg' or 'msg_pattern' must be provided, but not both."
+            )
+        return self
+
+    class Config:
+        """Pydantic configuration."""
+        extra = "forbid"  # forbid additional fields
+        frozen = True  # make instances immutable
+
+
+    def is_equivalent_to_error(self, error: ErrorDetails) -> bool:
+        """Check if this expected error is equivalent to the given error."""
+        if self.loc != tuple(error["loc"]):
+            return False
+
+        if self.msg and self.msg != error["msg"]:
+            return False
+
+        if self.msg_pattern and not re.match(self.msg_pattern, error["msg"]):
+            return False
+
+        return True
+
 def assert_model_validation_errors(
         model: type[BaseModel],
         data: Any,
-        expected_errors: list[tuple[tuple[str | int, ...], str]]):
+        expected_errors: list[ExpectedError]):
     """Assert that the model validation raises the expected errors.
 
     :param model: The Pydantic model to validate against.
@@ -37,24 +80,24 @@ def assert_model_validation_errors(
     try:
         model.model_validate(data)
     except ValidationError as val_err:
-        actual_errors = [
-            (err["loc"], err["msg"]) for err in val_err.errors()
-        ]
+        actual_errors = val_err.errors()
         # ids of actual errors that were not expected
         unexpected_actual_errids = {i for i in range(len(actual_errors))}
 
-        for i_expected, (loc, msg_pattern) in enumerate(expected_errors):
+        for i_expected, expected_err in enumerate(expected_errors):
             for i_actual, actual_err in enumerate(actual_errors):
-                if loc == actual_err[0]:
-                    if re.match(msg_pattern, actual_err[1]):
-                        # expected error was encountered
-                        unencountered_expected_errids.discard(i_expected)
-                        unexpected_actual_errids.discard(i_actual)
+                if expected_err.is_equivalent_to_error(actual_err):
+                    # expected error was encountered
+                    unencountered_expected_errids.discard(i_expected)
+                    unexpected_actual_errids.discard(i_actual)
 
         if unexpected_actual_errids:
             msg += "Unexpected error(s):\n"
             for i in unexpected_actual_errids:
-                loc, errmsg = actual_errors[i]
+                actual_err = actual_errors[i]
+                loc = actual_err["loc"]
+                errmsg = actual_err["msg"]
+
                 if loc:
                     msg += f"    {_err_loc_str(loc)}: {errmsg}\n"
                 else:
@@ -63,7 +106,10 @@ def assert_model_validation_errors(
     if unencountered_expected_errids:
         msg += "Expected error(s) missing:\n"
         for i in unencountered_expected_errids:
-            loc, errpattern = expected_errors[i]
+            expected_err = expected_errors[i]
+            loc = expected_err.loc
+            errpattern = expected_err.msg_pattern or expected_err.msg
+
             if loc:
                 msg += f"    {_err_loc_str(loc)}: {errpattern}\n"
             else:

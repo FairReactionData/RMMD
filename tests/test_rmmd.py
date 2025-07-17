@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 
-from rmmd.test import assert_model_validation_errors
+from rmmd.test import ExpectedError, assert_model_validation_errors
 import yaml
 import pytest
 from pydantic import BaseModel, Field, ValidationError
@@ -19,7 +19,7 @@ class ExampleMetadata(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    failures: list[tuple[tuple[str | int, ...], str]] = Field(default_factory=list)
+    failures: list[ExpectedError] = Field(default_factory=list)
     """each item is an expected validation error, given as tuple of a string representing the location of the error and a message."""
     description: str | None = None
     schema_part: str = "schema.Schema"  # complete schema by default
