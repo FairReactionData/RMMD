@@ -26,6 +26,7 @@ class ExampleMetadata(BaseModel):
     relative_path: Path
     """path to the example file relative to the test case directory"""
 
+
 ###############################################################################
 # test case collection
 ###############################################################################
@@ -37,6 +38,7 @@ def _list_test_files():
         if path.is_file():
             example_files.append(path)
     return example_files
+
 
 _test_cases = {  # will be filled later
     "argvalues": [],  # test data + schema
@@ -59,6 +61,7 @@ def _import_model(name: str) -> type[BaseModel]:
     assert issubclass(model, BaseModel)
 
     return model
+
 
 def _load_test_cases():
     """fills the global variable _test_cases with the test data from the files
@@ -138,6 +141,7 @@ _load_test_cases()
 # tests
 ###############################################################################
 
+
 def test_test_setup():
     """Test that the setup was successful and all examples were loaded"""
 
@@ -149,9 +153,7 @@ def test_test_setup():
 
 
 @pytest.mark.parametrize("data, schema, expected_errors", **_test_cases)  # type: ignore
-def test_model_validation(
-    data: Any, schema: type[BaseModel], expected_errors
-):
+def test_model_validation(data: Any, schema: type[BaseModel], expected_errors):
     """Test that invalid examples raise the expected validation errors"""
     assert_model_validation_errors(
         model=schema,

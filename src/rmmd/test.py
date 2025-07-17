@@ -1,11 +1,11 @@
 """Module containing helper functions for testing."""
 
-
 import re
 from typing import Any, Self
 from pydantic import BaseModel, ValidationError, model_validator
 from pydantic_core import ErrorDetails
 import pytest
+
 
 def _err_loc_str(loc: tuple[str | int, ...]) -> str:
     """Convert a location tuple to a string"""
@@ -18,6 +18,7 @@ def _err_loc_str(loc: tuple[str | int, ...]) -> str:
             loc_str += f".{loc_entry}"
 
     return loc_str
+
 
 class ExpectedError(BaseModel):
     """Expected validation error for a model validation test."""
@@ -33,7 +34,7 @@ class ExpectedError(BaseModel):
 
     Either msg or msg_pattern must be provided."""
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_either_msg_or_pattern_existing(self) -> Self:
         """Ensure that either msg or msg_pattern is provided."""
         if self.msg is None != self.msg_pattern is None:
@@ -44,9 +45,9 @@ class ExpectedError(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         extra = "forbid"  # forbid additional fields
         frozen = True  # make instances immutable
-
 
     def is_equivalent_to_error(self, error: ErrorDetails) -> bool:
         """Check if this expected error is equivalent to the given error."""
@@ -61,10 +62,10 @@ class ExpectedError(BaseModel):
 
         return True
 
+
 def assert_model_validation_errors(
-        model: type[BaseModel],
-        data: Any,
-        expected_errors: list[ExpectedError]):
+    model: type[BaseModel], data: Any, expected_errors: list[ExpectedError]
+):
     """Assert that the model validation raises the expected errors.
 
     :param model: The Pydantic model to validate against.
