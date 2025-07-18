@@ -1,9 +1,5 @@
---- # test setup
-description: How to represent thermochemistry data using Butane as an example
-# schema_part: schema.Schema  - not needed for this example (schema.Schema is
-#                               the default); used to test against a subschema
-failures: []   # fully valid file
---- # actual example
+# This file shows how the conformers of butane can be described in RMMD.
+# It also shows how to link thermochemistry data to the conformers.
 schema_version: 0.1.0b0
 license: MIT
 species:

@@ -1,7 +1,5 @@
---- # test setup
-description: This is a mimial example of a valid file
-# schema_part: schema.Schema  - not needed for this example (schema.Schema is
-#                               the default); used to test against a subschema
---- # actual example
+# This is the minimum content of an RMMD file to be valid.
+# It contains the RMMD schema version and a license for the data contained in
+# the file.
 schema_version: 0.1.0b0
 license: MIT

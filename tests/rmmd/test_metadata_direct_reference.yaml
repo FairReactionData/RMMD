@@ -4,17 +4,25 @@ schema_part: metadata._DirectReferenceTest # this special model allows defining
                 # a list of direct references so we include multiple test cases
                 # in this one file
 failures:
-  - ['0.HttpUrlReference',  # since we use a discriminated union, the model is
+  - loc: [0, 'HttpUrlReference']  # since we use a discriminated union, the model is
                             # part of the location
-    'Value error, HandleNet identifiers should be provided as full URLs.*']
-  - ['1.HandleNet', 'String should match pattern .*handle\\\.net.*']
-  - ['2.HttpUrlReference', 'Value error, DOIs should be provided as full URLs starting with https']
-  - ['3.HttpUrlReference', 'Value error, DOIs should follow the format https:\/\/doi\.org\/10\.xxxx\/\.\.\. ']
-  - ['4.Doi', 'String should match pattern.*']
-  - ['7', 'Could not determine the type of direct reference.*']
-  - ['9', 'Could not determine the type of direct reference.*']
-  - ['10', 'Could not determine the type of direct reference.*'] # absolute paths not allowed
-  - ['11.HttpUrlReference', 'Value error, HandleNet identifiers should be provided as full URLs starting with https.*'] # absolute paths not allowed
+    msg_pattern: 'Value error, HandleNet identifiers should be provided as full URLs.*'
+  - loc: [1, 'HandleNet']
+    msg_pattern: 'String should match pattern .*handle\\\.net.*'
+  - loc: [2, 'HttpUrlReference']
+    msg: 'Value error, DOIs should be provided as full URLs starting with https'
+  - loc: [3, 'HttpUrlReference']
+    msg_pattern: 'Value error, DOIs should follow the format https://doi.org/10.xxxx/.*'
+  - loc: [4, 'Doi']
+    msg: 'String should match pattern ''^https:\/\/doi\.org\/10\.\d{4,}/.*'''
+  - loc: [7]
+    msg: 'Could not determine the type of direct reference. Valid direct references include DOIs, HandleNet identifiers, HTTP URLs, or relative file paths.'
+  - loc: [9]
+    msg_pattern: 'Could not determine the type of direct reference.*'
+  - loc: [10]
+    msg_pattern: 'Could not determine the type of direct reference.*'  # absolute paths not allowed
+  - loc: [11, 'HttpUrlReference']
+    msg: 'Value error, HandleNet identifiers should be provided as full URLs starting with https://hdl.handle.net/...' # absolute paths not allowed
 --- # actual example
 - "http://hdl.handle.net/10.1234/abcd" # invalid: http instead of https
 - "https://hdl.handle.net/10.1234/abcd" # invalid DOI with handle.net resolver
