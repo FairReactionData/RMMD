@@ -8,7 +8,14 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    computed_field,
+    model_validator,
+)
 
 from .elements import ElementSymbol
 from .metadata import CitationKeyOrDirectReference
@@ -18,22 +25,40 @@ from .keys import PointId, QcCalculationId
 class ElectronicState(BaseModel):
     """Definition of the electronic state"""
 
-    # TODO what is the minimum required information? What may we need to add in the future?
-    #       for a computational chemist, charge and spin multiplicity
-    #       for a mechanism modeler, whether the state is excited or not
-    #       other ideas: term symbol, number of unpaired electrons, ...
-    #
-    #       -> we may have to use different electronic state definitions for different purposes :(
-
     charge: int
     """total charge"""
-    spin: int  # TODO: integer -> then use 2*S!
-    """total electron spin quantum number"""
+    spin: NonNegativeInt | Literal["unkown"]
+    """2S - two times the electron spin quantum number"""
 
-    @computed_field
+    description: str | None = None
+    """human-readable description of the electronic state, e.g. "ground state"
+
+    This field is required, if spin is unkown. This field can also be used to
+    add additional information about the electronic state, e.g., the term
+    symbol
+    """
+
+    @model_validator(mode="after")
+    def require_description_for_unkown_spin(self):
+        """require a description if the spin is unkown"""
+        if self.spin == "unkown" and not self.description:
+            raise ValueError("Description is required if the spin is unkown")
+        return self
+
+
+class ElectronicStateWitSpin(ElectronicState):
+    """Electronic state with spin multiplicity
+
+    This model should be used where the spin multiplicity is required, e.g., in
+    quantum chemistry calculations.
+    """
+
+    spin: NonNegativeInt
+    """2S - two times the electron spin quantum number"""
+
     def spin_multiplicity(self) -> int:
         """spin multiplicity, i.e. 2S+1"""
-        return 2 * self.spin + 1
+        return self.spin + 1
 
 
 LevelOfTheory = Annotated[
