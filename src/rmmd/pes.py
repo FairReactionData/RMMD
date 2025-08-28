@@ -6,34 +6,58 @@ https://docs.pydantic.dev/latest/concepts/json_schema/#generating-json-schema
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeAlias
 
-from pydantic import BaseModel, Field, PositiveInt, computed_field, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    model_validator,
+)
 
 from .elements import ElementSymbol
 from .metadata import CitationKeyOrDirectReference
-from .keys import PointId, QcCalculationId
+from .keys import ConformationId, EntityKey, QcCalculationId
 
 
 class ElectronicState(BaseModel):
     """Definition of the electronic state"""
 
-    # TODO what is the minimum required information? What may we need to add in the future?
-    #       for a computational chemist, charge and spin multiplicity
-    #       for a mechanism modeler, whether the state is excited or not
-    #       other ideas: term symbol, number of unpaired electrons, ...
-    #
-    #       -> we may have to use different electronic state definitions for different purposes :(
-
     charge: int
     """total charge"""
-    spin: int  # TODO: integer -> then use 2*S!
-    """total electron spin quantum number"""
+    spin: NonNegativeInt | Literal["unkown"]
+    """2S - two times the electron spin quantum number"""
 
-    @computed_field
+    description: str | None = None
+    """human-readable description of the electronic state, e.g. "ground state"
+
+    This field is required, if spin is unkown. This field can also be used to
+    add additional information about the electronic state, e.g., the term
+    symbol
+    """
+
+    @model_validator(mode="after")
+    def require_description_for_unkown_spin(self):
+        """require a description if the spin is unkown"""
+        if self.spin == "unkown" and not self.description:
+            raise ValueError("Description is required if the spin is unkown")
+        return self
+
+
+class ElectronicStateWitSpin(ElectronicState):
+    """Electronic state with spin multiplicity
+
+    This model should be used where the spin multiplicity is required, e.g., in
+    quantum chemistry calculations.
+    """
+
+    spin: NonNegativeInt
+    """2S - two times the electron spin quantum number"""
+
     def spin_multiplicity(self) -> int:
         """spin multiplicity, i.e. 2S+1"""
-        return 2 * self.spin + 1
+        return self.spin + 1
 
 
 LevelOfTheory = Annotated[
@@ -215,6 +239,7 @@ class QmFreqData(_QmCalculationDataBase):
     w.r.t. the coordinates [Hartree/Å]"""
 
 
+# TODO remove and use MultiCalculationData with opt and freq calculations instead?
 class QmOptFreqData(_QmCalculationDataBase):
     """Data from a geometry optimization calculation with frequencies"""
 
@@ -295,22 +320,17 @@ one may still reference a public dataset, but this is not required.
 ###############################################################################
 
 
-class BoPesDomain(BaseModel):
-    """Domain of a Born-Oppenheimer potential energy surface"""
+class Conformation(BaseModel):
+    """ "The spatial arrangement of the atoms affording distinction between
+    stereoisomers which can be interconverted by rotations about formally
+    single bonds." - IUPAC Goldbook, https://doi.org/10.1351/goldbook.C01258
 
-    constitution: "Constitution"
-    electronic_state: ElectronicState
-
-    # solvent: ... # maybe add this later
-
-
-class Point(BaseModel):
-    """Point on a potential energy surface.
-
-    Usually, this is a stationary point, i.e. a set of internal coordinates whose gradient w.r.t. the electronic Schrödinger equation using the Born-Oppenheimer approximation is exactly zero. In general, such coordinates can only be approximated by quantum chemical calculations as the exact solution to the Schrödinger equation is usually unfeasible/impossible. This class represents such a theoretical point and is used to group different calculation results as belonging to the same point.
+    This class is supposed to represent such a spatial arragemnet that is an
+    exact stationary point on the potential energy surface (PES) of its
+    molecular  entity (using the Born-Oppenheimer approximation). These spatial
+    arragements are approximated by minimum or saddle point optimizations with
+    a particular quantum chemistry method.
     """
-
-    domain: BoPesDomain
 
     description: str | None = None
     """human-readable description of the point"""
@@ -322,8 +342,10 @@ class Point(BaseModel):
     """thermochemical properties for this point, if it alone is considered"""
 
 
-PointEnsemble = Annotated[list[tuple[PointId, PositiveInt]], Field(min_length=1)]
-"""ensemble of stationary points on a potential energy surface.
+ConformationalEnsemble = Annotated[
+    list[tuple[ConformationId, PositiveInt]], Field(min_length=1)
+]
+"""ensemble of conformations
 
 Used when multiple points interconvert fast w.r.t. the timescale of interest,
 e.g.; conformers, ...
@@ -335,93 +357,31 @@ trans conformer and 1 and 2 are points representing the two mirror images of
 the gauche conformer.
 """
 
-PointSequence = Annotated[list[PointId], Field(min_length=1)]
+PointSequence = Annotated[list[ConformationId], Field(min_length=1)]
 """path connecting stationary points on a potential energy surface, e.g., a
 IRC path, frozen scane, ...
 """
 
+Well: TypeAlias = set[EntityKey]
+"""n-molecular well - set of molecular entities which are minima on a PES
+"""
 
-class _PesStageBase(BaseModel):
-    """A stage in a detailed PES network"""
+TransitionState: TypeAlias = EntityKey
+"""a transition state
 
-    type: str
-
-
-class UnimolecularWell(_PesStageBase):
-    """A well in a detailed PES network"""
-
-    type: Literal["unimolecular well"] = "unimolecular well"
-    point: PointId | PointEnsemble
-    """stationary point(s) of the well"""
+represented by a molecular entity whose connectivity is a condensed reaction
+graph
+"""
 
 
-class NMolecularWell(_PesStageBase):
-    """A bi- or higher molecular well in a detailed PES network.
-
-    Individual molecular entities are considered to be infinitely far apart."""
-
-    type: Literal["n-molecular well"] = "n-molecular well"
-    points: list[PointId | PointEnsemble]
-    """points that when combined form the well. Technically, these are points on different lower-dimensional PES domains (i.e. fewer atoms)."""
-
-    @computed_field
-    def n(self) -> int:
-        return len(self.points)
-
-    # TODO how to interpret bimolecular wells that are not VdW complexes? technically, they are a single point on the same PES domain as the TS with the two molecular entities being modeled as infinitely far apart; alternative view: two points on different PES domains with a special relation between them
-
-
-class VdWComplex(_PesStageBase):
-    """A van der Waals complex in a detailed PES network.
-
-    Individual molecular entities are considered to be infinitely far apart."""
-
-    type: Literal["van der Waals complex"] = "van der Waals complex"
-    point: PointId | PointEnsemble
-
-
-class NthOrderSaddlePoint(_PesStageBase):
-    """A saddle point of order n (>1) in a detailed PES network, e.g. a
-    second-order saddle point connecting two TS conformers.
-    Use type = transition state for first oder saddle points."""
-
-    type: Literal["nth-order saddle point"] = "nth-order saddle point"
-    order: int
-    """order of the saddle point"""
-    point: PointId | PointEnsemble
-    """stationary point(s) of the saddle point"""
-
-
-class TransitionState(NthOrderSaddlePoint):
-    """A transition state in a detailed PES network"""
-
-    order: Literal[1] = 1
-    type: Literal["transition state"] = "transition state"
-    point: PointId | PointEnsemble
-    """stationary point(s) of the transition state"""
-
-
-Well = Annotated[
-    UnimolecularWell | NMolecularWell | VdWComplex, Field(discriminator="type")
-]
-SaddlePoint = Annotated[
-    NthOrderSaddlePoint | TransitionState, Field(discriminator="type")
-]
-
-
-class PesReaction(BaseModel):
+class PesPath(BaseModel):
     """An Edge/"ReactionStep" in a detailed PES network"""
 
     stages: tuple[Well, Well]
     """product and reactant wells"""
-    saddle_point: SaddlePoint
+    transition_state: TransitionState
     """transition state"""
-    irc_scan_forward: PointSequence | None = None
-    """path connecting the stages"""
-    irc_scan_backward: PointSequence | None = None
-    """path connecting the stages"""
 
 
 # avoid circular imports by importing here and using forward references above
 from rmmd.thermo import PointThermo  # noqa: E402
-from rmmd.species import Constitution  # noqa: E402

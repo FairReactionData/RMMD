@@ -7,10 +7,9 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, Field, field_validator
 
-from .metadata import CitationKeyOrDirectReference
 from .thermo import SpeciesThermo
-from .pes import ElectronicState, PesReaction
-from .keys import EntityKey, PointId, SpeciesName
+from .pes import ElectronicState, PesPath
+from .keys import EntityKey, ConformationId, SpeciesName
 
 
 class Species(BaseModel):
@@ -31,10 +30,11 @@ class Species(BaseModel):
     """transport properties for this species"""
 
 
-class CanonicalEntity(BaseModel):
-    """identifiable and distinguishable entity"""
+class MolecularEntity(BaseModel):
+    """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
-    # TODO find different name: according to the IUPAC goldbook, the meaning of "molecular entity" varies with context, e.g., in quantum chemistry context, the Point class fits the definition of "molecular entity" better than this class -> "CanonicalEntity"?
+    Here, flexible conformational spatial rearrangements are by default not distinguished, i.e., a molecular entity can have multiple conformers.
+    """
 
     # TODO canonical representation of each field; this is similar to the layers of an InChI
     constitution: Constitution
@@ -46,9 +46,17 @@ class CanonicalEntity(BaseModel):
     stereo: Stereochemistry | None = None
     electronic_state: ElectronicState | None = None
     """usually the ground state is assumed"""
-    points: list[PointId] | Literal["all"] = "all"
-    """list of points on a PES that correspond to this molecular entity. If not
-    "all", the representation is not canonical -> use carefully!"""
+    defining_conformations: list[ConformationId] | Literal["all"] = "all"
+    """While by default, all confomrations with the same stereochemistry and electronic state are considered part of the same molecular entitiy, this field can be used to restrict the set of conformations. In some cases,
+    conformations have to belong to separate species to correctly model the kinetics of a system, but they have the same stereochemistry and electronic state. For example, different pre-reactive complexes where the fragements each have the same stereochemistry and electronic state, but different orientations relative to each other. In this case, the different pre-reactive complexes can be defined as different molecular entities with the same constitution, connectivity, stereo, and electronic state, but different defining_conformations.
+    """
+    conformations: list[ConformationId] = Field(default_factory=list)
+    """list of conformations that have been identified for this molecular entity.
+
+    Expecially, if `defining_conformations` is "all" and the molecular
+    strucutre is flexible, this list is not guaranteed to be exhaustive as not
+    all conformations may have been identified.
+    """
 
     identifiers: list[StringIdentifier] = Field(
         default_factory=list,
@@ -98,19 +106,8 @@ class SpeciesRole(BaseModel):
 class Reaction(BaseModel):
     """A chemical reaction"""
 
-    nodes: list[SpeciesRole]
-    definition: ReactionDefinition
-
-
-class ReactionDefinition(BaseModel):
-    """connects the coarse edge to detailed
-    edges
-    """
-
-    references: list[CitationKeyOrDirectReference] | None = None
-    """Literature reference where the detailed data was combined to a
-    phenomenological reaction (rate). """
-    pes_reaction: PesReaction
+    species: list[SpeciesRole]
+    pes_paths: list[PesPath] = Field(default_factory=list)
 
 
 ##############################################################################

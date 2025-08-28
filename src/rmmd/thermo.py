@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
-from .pes import PointEnsemble, Software
+from .pes import ConformationalEnsemble, Software
 from .keys import CitationKey, QcCalculationId
 
 
@@ -112,7 +112,7 @@ class BoltzmannWeightedEnsemble(_ThermoPropertyBase):
     """ensemble of multiple stationary points modelled as RRHO each"""
 
     type: Literal["Boltzmann weighted ensemble"] = "Boltzmann weighted ensemble"
-    members: PointEnsemble
+    members: ConformationalEnsemble
     """members of the ensemble, each with its degeneracy"""
     energy_expression: Literal["G", "H", "electronic energy", "ZPE"]
     """energy expression used in the Boltzmann coefficient to calculate the weigths of ensemble members."""
