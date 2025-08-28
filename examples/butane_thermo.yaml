@@ -24,6 +24,11 @@ entities:
   IJDNQMDRQITEOD-UHFFFAOYNA-N:
     constitution: {C: 4, H: 10}
     connectivity: {}
+    identifiers:
+      - type: "InChI"
+        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
+      - type: "InChIKey"
+        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
 points:
   - domain:
       constitution: {C: 4, H: 10}

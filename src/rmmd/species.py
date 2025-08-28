@@ -5,7 +5,7 @@ from abc import ABC
 from typing import Annotated, Literal, TypeAlias
 
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .thermo import SpeciesThermo
 from .pes import ElectronicState, PesPath
@@ -58,6 +58,27 @@ class MolecularEntity(BaseModel):
     all conformations may have been identified.
     """
 
+    identifiers: list[StringIdentifier] = Field(
+        default_factory=list,
+        description="list of string identifiers for the molecular entity",
+    )
+    """string identifiers for the molecular entity, e.g., InChI, SMILES, ...
+
+    .. examples::
+
+        - `{"type": "InChI", "value": "InChI=1S/CH4/h1H4"}`
+        - `{"type": "custom", "label": "AMChI",
+        "value": "AMChI=1/C5H9/c1-3-5-4-2/h3-5H,1-2H3/b5-3+,5-4+"}`
+
+    .. note::
+
+        The "custom" type is used for identifiers that do not fit into the
+        standard types. Programs who use the starndard identifiers (InChI,
+        SMILES) will read fields with type "InChI" or "SMILES". So, while it is
+        possible to supply an InChI via a custom identifier, it is stronlgy
+        discouraged.
+    """
+
     # TODO introduce separate Molecular entity definiton? -> e.g. what about crystals, other materials
 
     # If we explicitly represent the different information layers, we need a
@@ -67,10 +88,6 @@ class MolecularEntity(BaseModel):
     # representation of each layer does not even need to be canonical, as long
     # as we have a function that produces a canonical representation.
     # TODO better canoncial representation of each layer
-    def inchi_key_h_layer(self) -> str:
-        """returns the InChI key of the entity, including the fixed-H layer"""
-        # TODO implement
-        return "AAAAAAAAAAAAAA-AAAAAAAAAA-A"
 
 
 class TransportProperty(BaseModel):
@@ -121,27 +138,76 @@ class Stereochemistry(BaseModel):
     # TODO define via stereocenters
 
 
-class StringIdentifier(BaseModel, ABC):
-    type: str  # for easy identification of subtypes during validation
+class _StringIdentifierBase(BaseModel, ABC):
+    """Base class for string identifiers with a type field."""
+
+    type: str
     value: str
-    canonical_repr: str
 
 
-class StandardInChI(StringIdentifier):
-    """Standard IUPAC International Chemical Identifier
+class _StandardInChI(_StringIdentifierBase):
+    """Standard IUPAC International Chemical Identifier"""
 
-    Its value is the canonical_repr, since it is a canonical string
-    representation."""
+    type: Literal["InChI"]
 
-    type: Literal["SInChI"]
+    @field_validator("value", mode="after")
+    @classmethod
+    def validate_standard_inchi(cls, value: str) -> str:
+        """Simple validation of the InChI string. Does not rigourously check
+        validity, but at least if it is a standard InChI."""
+        if not value.startswith("InChI=1S/"):
+            raise ValueError("Not a standard InChI.")
+
+        return value
 
 
-class SMILES(StringIdentifier):
+class _FixedHInChI(_StringIdentifierBase):
+    """IUPAC International Chemical Identifier generated with the fixed-H layer."""
+
+    type: Literal["InChI-fixedH"]
+
+    @field_validator("value", mode="after")
+    @classmethod
+    def validate_non_standard_inchi(cls, value: str) -> str:
+        """Simple validation of the InChI string. Does not rigourously check
+        validity, but at least if it is a standard InChI."""
+        if not value.startswith("InChI=S/"):
+            raise ValueError("Standard InChIs not allowed for this field.")
+
+        return value
+
+
+class _StandardInChIKey(_StringIdentifierBase):
+    """Standard IUPAC International Chemical Identifier Key"""
+
+    type: Literal["InChIKey"]
+    value: Annotated[
+        str,
+        Field(
+            pattern="^[A-Z]{14}-[A-Z]{8}SA-[A-Z]$",
+        ),
+    ]
+
+
+class _SMILES(_StringIdentifierBase):
     """..."""
 
     type: Literal["SMILES"]
 
 
-SpeciesIdentifier: TypeAlias = Constitution | StandardInChI | SMILES
-"""implementation detail: validation schemas do not support inheritance in the
-classical sense. Instead, all subclasses have to be validated against."""
+class _CustomStringIdentifier(_StringIdentifierBase):
+    """Custom string identifier with a type field."""
+
+    type: Literal["custom"]
+    label: str
+
+
+StringIdentifier: TypeAlias = Annotated[
+    _StandardInChI
+    | _SMILES
+    | _CustomStringIdentifier
+    | _FixedHInChI
+    | _StandardInChIKey,
+    Field(discriminator="type"),
+]
+"""string identifier for a molecular entity"""
