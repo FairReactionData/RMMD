@@ -73,5 +73,5 @@ class QcCalculationId(RootModel[int | tuple[int, int]]):
         return value
 
 
-PointId = int
-"""index of point in the list of points"""
+ConformationId = int
+"""index of a conformation in the list of conformations"""

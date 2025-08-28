@@ -2,9 +2,9 @@
 from typing import Literal
 
 from .keys import CitationKey, EntityKey, SpeciesName
-from .pes import Point, QmCalculation
+from .pes import Conformation, QmCalculation
 from .metadata import Citation, CitationKeyOrDirectReference, Reference
-from .species import CanonicalEntity, Reaction, Species
+from .species import MolecularEntity, Reaction, Species
 
 from pydantic import BaseModel, Field
 
@@ -15,14 +15,14 @@ class Schema(BaseModel):
     ### mechanism view ###
     species: dict[SpeciesName, Species] = Field(default_factory=dict)
     """chemical species in the dataset"""
-    entities: dict[EntityKey, CanonicalEntity] = Field(default_factory=dict)
+    entities: dict[EntityKey, MolecularEntity] = Field(default_factory=dict)
     """canonical representation of the species in the dataset. InChiKeys are generated including the fixed-H layer"""
     reactions: list[Reaction] = Field(default_factory=list)
     """reactions in the dataset"""
 
     ### electronic structure view ###
-    points: list[Point] = Field(default_factory=list)
-    """points in the dataset"""
+    conformations: list[Conformation] = Field(default_factory=list)
+    """conformations in the dataset"""
     calculations: list[QmCalculation] = Field(default_factory=list)
     """quantum chemistry calculations"""
 
