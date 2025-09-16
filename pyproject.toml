@@ -5,6 +5,7 @@ dependencies = [
     "pyyaml>=5.4.1,<7",
     "pytest>=8.0,<9",
     "click>=8.1.8,<9",
+    "rdkit>=2025.3.6,<2026",
 ]
 description = "Add a short description here"
 name = "rmmd"
