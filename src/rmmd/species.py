@@ -1,15 +1,22 @@
 """part of the schema for identifying species and reactions"""
 
 from __future__ import annotations
+
 from abc import ABC
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, Literal, Self, TypeAlias
 
+from pydantic import BaseModel, Field, model_validator
+from rdkit.Chem import (
+    MolBlockToInchi,
+    MolFromInchi,
+    MolFromSmiles,
+    MolToMolBlock,
+    MolToSmiles,
+)
 
-from pydantic import BaseModel, Field, field_validator
-
-from .thermo import SpeciesThermo
+from .keys import ConformationId, EntityKey, SpeciesName
 from .pes import ElectronicState, PesPath
-from .keys import EntityKey, ConformationId, SpeciesName
+from .thermo import SpeciesThermo
 
 
 class Species(BaseModel):
@@ -143,38 +150,79 @@ class _StringIdentifierBase(BaseModel, ABC):
 
     type: str
     value: str
+    validation_strategy: Literal["quick", "full", "recalculate"] = "quick"
+
+    @model_validator(mode="after")
+    def validate_string_identifier(self) -> Self:
+        """Validate string identifier value."""
+        if self.validation_strategy == "quick":
+            self.quick_validate()
+        elif self.validation_strategy == "recalculate":
+            self.value = self.recalculate()
+        elif self.validation_strategy == "full":
+            self.full_validate()
+        return self
+
+    def quick_validate(self) -> None:
+        """Validate string identifier value (quick)."""
+        pass
+
+    def recalculate(self) -> str:
+        """Recalculate string identifier value (no validation)."""
+        msg = f"Recalculation is not implemented for type {self.type}"
+        raise NotImplementedError(msg)
+
+    def full_validate(self) -> None:
+        """Validate string identifier value (full)."""
+        try:
+            recalculated_value = self.recalculate()
+        except NotImplementedError:
+            msg = f"Full validation is not implemented for type {self.type}"
+            raise NotImplementedError(msg)
+
+        if not recalculated_value == self.value:
+            msg = (
+                f"Recalculated {self.type} does not match:\n"
+                f"original:     {self.value}\n"
+                f"recalculated: {recalculated_value}\n"
+            )
+            raise ValueError(msg)
 
 
 class _StandardInChI(_StringIdentifierBase):
     """Standard IUPAC International Chemical Identifier"""
 
-    type: Literal["InChI"]
+    type: Literal["InChI"] = "InChI"
 
-    @field_validator("value", mode="after")
-    @classmethod
-    def validate_standard_inchi(cls, value: str) -> str:
-        """Simple validation of the InChI string. Does not rigourously check
-        validity, but at least if it is a standard InChI."""
-        if not value.startswith("InChI=1S/"):
-            raise ValueError("Not a standard InChI.")
+    def quick_validate(self) -> None:
+        """Validate string identifier value (quick)."""
+        if not self.value.startswith("InChI=1S/"):
+            msg = f"{self.type} is missing expected prefix 'InChI=1S/': {self.value}"
+            raise ValueError(msg)
 
-        return value
+    def recalculate(self) -> str:
+        """Recalculate string identifier value (no validation)."""
+        mol = MolFromInchi(self.value)
+        mol_block = MolToMolBlock(mol)
+        return MolBlockToInchi(mol_block)  # type: ignore
 
 
 class _FixedHInChI(_StringIdentifierBase):
     """IUPAC International Chemical Identifier generated with the fixed-H layer."""
 
-    type: Literal["InChI-fixedH"]
+    type: Literal["InChI-fixedH"] = "InChI-fixedH"
 
-    @field_validator("value", mode="after")
-    @classmethod
-    def validate_non_standard_inchi(cls, value: str) -> str:
-        """Simple validation of the InChI string. Does not rigourously check
-        validity, but at least if it is a standard InChI."""
-        if not value.startswith("InChI=S/"):
-            raise ValueError("Standard InChIs not allowed for this field.")
+    def quick_validate(self) -> None:
+        """Validate string identifier value (quick)."""
+        if not self.value.startswith("InChI=1/"):
+            msg = f"{self.type} is missing expected prefix 'InChI=1/': {self.value}"
+            raise ValueError(msg)
 
-        return value
+    def recalculate(self) -> str:
+        """Recalculate string identifier value (no validation)."""
+        mol = MolFromInchi(self.value)
+        mol_block = MolToMolBlock(mol)
+        return MolBlockToInchi(mol_block, options="-FixedH")  # type: ignore
 
 
 class _StandardInChIKey(_StringIdentifierBase):
@@ -192,7 +240,12 @@ class _StandardInChIKey(_StringIdentifierBase):
 class _SMILES(_StringIdentifierBase):
     """..."""
 
-    type: Literal["SMILES"]
+    type: Literal["SMILES"] = "SMILES"
+
+    def recalculate(self) -> str:
+        """Recalculate string identifier value (no validation)."""
+        mol = MolFromSmiles(self.value)
+        return MolToSmiles(mol)
 
 
 class _CustomStringIdentifier(_StringIdentifierBase):
