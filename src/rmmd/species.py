@@ -264,3 +264,9 @@ StringIdentifier: TypeAlias = Annotated[
     Field(discriminator="type"),
 ]
 """string identifier for a molecular entity"""
+
+
+class _StringIdentifierTest(BaseModel):
+    """class for testing the Geometry and Geometries classes"""
+
+    string_identifier_list: list[StringIdentifier]
