@@ -1,8 +1,9 @@
 --- # test setup
 description: Contains all types of jobs with toy data.
-schema_part: metadata._DirectReferenceTest # this special model allows defining
+schema_part: metadata.DirectReference # this special model allows defining
                 # a list of direct references so we include multiple test cases
                 # in this one file
+test_type: multiple
 failures:
   - loc: [0, 'HttpUrlReference']  # since we use a discriminated union, the model is
                             # part of the location

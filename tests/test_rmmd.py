@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 
 from rmmd.test import ExpectedError, assert_model_validation_errors
 import yaml
 import pytest
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 import importlib
 
@@ -14,8 +14,10 @@ _HERE = Path(__file__).parent.resolve()
 _TEST_CASE_DIR = _HERE / "rmmd"
 
 
-class ExampleMetadata(BaseModel):
+class TestMetadata(BaseModel):
     """specification of the metadata block of the test cases"""
+
+    __test__ = False  # tells pytest that this class does not contain tests
 
     model_config = {"extra": "forbid"}
 
@@ -23,6 +25,11 @@ class ExampleMetadata(BaseModel):
     """each item is an expected validation error, given as tuple of a string representing the location of the error and a message."""
     description: str | None = None
     schema_part: str = "schema.Schema"  # complete schema by default
+    test_type: Literal["direct", "multiple"] = "direct"
+    """tells the test code to either validate directly against the schema_part
+    or to create a new schema that is a list of schema_part and validate
+    against that.
+    """
     relative_path: Path
     """path to the example file relative to the test case directory"""
 
@@ -57,8 +64,6 @@ def _import_model(name: str) -> type[BaseModel]:
 
     module = importlib.import_module(module_name)
     model = getattr(module, class_name)
-
-    assert issubclass(model, BaseModel)
 
     return model
 
@@ -113,7 +118,7 @@ def _load_test_cases():
                 )
 
         try:
-            metadata = ExampleMetadata(
+            metadata = TestMetadata(
                 **content[0], relative_path=file.relative_to(_TEST_CASE_DIR)
             )
         except ValidationError as err:
@@ -128,6 +133,12 @@ def _load_test_cases():
                 (file, f"Could not import model {metadata.schema_part}: {err}")
             )
             continue
+
+        if metadata.test_type == "multiple":
+            model = TypeAdapter(list[model])
+            # TypeAdapter does not have a model_validate method which is called
+            # by the tests. Its validate_python behaves similar
+            model.model_validate = model.validate_python
 
         id = f"{metadata.relative_path}"
 

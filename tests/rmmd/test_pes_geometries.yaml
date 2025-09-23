@@ -1,0 +1,26 @@
+--- # test setup
+description: Test geometry model.
+schema_part: pes.Geometries # test only the geometry model
+test_type: multiple
+failures:
+  - loc: [1]
+    msg: 'Value error, Number of atoms and coordinates must match'
+--- # actual example
+- # valid
+  atoms: [H, H]
+  coordinates: [
+    [[0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.7]],
+    [[0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.74]],
+    [[0.0, -0.552, 0.0],
+      [0.552, 0.0, 0.0]],
+    [[0.0, 0.8, 0.0],
+      [0.0, 0.0, 0.0]],
+  ]
+- # invalid (n_atoms is inconsistent)
+  atoms: [H, H, O]
+  coordinates:
+    [[[0.0, 0.0, 0.0],
+      [1.0, 1.0, 1.0]],
+      [[2.0, 2.0, 2.0]]]
