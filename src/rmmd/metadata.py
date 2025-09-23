@@ -9,7 +9,6 @@ from pydantic import (
     BaseModel,
     Discriminator,
     Field,
-    RootModel,
     Tag,
     UrlConstraints,
 )
@@ -145,8 +144,3 @@ schema without adding a reference item to the literature table and using its cit
 CitationKeyOrDirectReference = DirectReference | CitationKey
 """String type that either identifies a reference directly or is a key to the
 literature table in the schema."""
-
-
-class _DirectReferenceTest(RootModel[list[DirectReference]]):
-    """Used in a test case to define different valid and invalid direct
-    references."""

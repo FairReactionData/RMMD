@@ -202,13 +202,6 @@ class Geometries(BaseModel):
         return self
 
 
-class _GeometryTest(BaseModel):
-    """class for testing the Geometry and Geometries classes"""
-
-    geometry_list: list[Geometry]
-    geometries_list: list[Geometries]
-
-
 class QmOptData(_QmCalculationDataBase):
     """Data from a geometry optimization calculation"""
 
