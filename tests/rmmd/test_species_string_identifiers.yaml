@@ -1,0 +1,57 @@
+--- # test setup
+description: Test species string identifiers.
+schema_part: species.StringIdentifier
+test_type: multiple
+failures:
+  - loc: [2, "InChI"]
+    msg_pattern: 'Value error, Recalculated InChI does not match:'
+  - loc: [3, "InChI"]
+    msg_pattern: 'Value error, InChI is missing expected prefix ''InChI=1S/'':'
+  - loc: [6, "InChI-fixedH"]
+    msg_pattern: 'Value error, Recalculated InChI-fixedH does not match:'
+  - loc: [9, "SMILES"]
+    msg_pattern: 'Value error, Recalculated SMILES does not match:'
+--- # actual example
+  # Example 1: RDKit-generated InChI with corrupted stereochemistry
+  - 
+    type: 'InChI'
+    value: 'InChI=1S/C4H7/c1-3-4-2/h3-4H,1H2,2H3/b4-3+'
+    validation_strategy: 'quick'
+  - 
+    type: 'InChI'
+    value: 'InChI=1S/C4H7/c1-3-4-2/h3-4H,1H2,2H3/b4-3+'
+    validation_strategy: 'recalculate'
+  -
+    type: 'InChI'
+    value: 'InChI=1S/C4H7/c1-3-4-2/h3-4H,1H2,2H3/b4-3+'
+    validation_strategy: 'full'
+  # Example 2: Fixed-H InChI with atoms 3 and 4 switched (fixed by recalculation)
+  -
+    type: 'InChI'
+    value: 'InChI=1/C2H4O2/c1-2(3)4/h1H3,(H,3,4)/f/h3H'
+    validation_strategy: 'quick'
+  - 
+    type: 'InChI-fixedH'
+    value: 'InChI=1/C2H4O2/c1-2(4)3/h1H3,(H,3,4)/f/h3H'
+    validation_strategy: 'quick'
+  - 
+    type: 'InChI-fixedH'
+    value: 'InChI=1/C2H4O2/c1-2(4)3/h1H3,(H,3,4)/f/h3H'
+    validation_strategy: 'recalculate'
+  -
+    type: 'InChI-fixedH'
+    value: 'InChI=1/C2H4O2/c1-2(4)3/h1H3,(H,3,4)/f/h3H'
+    validation_strategy: 'full'
+  # Example 3: A SMILES string that has not been RDKit-canonicalized (canonicalized by recalculation)
+  -
+    type: 'SMILES'
+    value: 'OC(=O)C'
+    validation_strategy: 'quick'
+  -
+    type: 'SMILES'
+    value: 'OC(=O)C'
+    validation_strategy: 'recalculate'
+  -
+    type: 'SMILES'
+    value: 'OC(=O)C'
+    validation_strategy: 'full'
