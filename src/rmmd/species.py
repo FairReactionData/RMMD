@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Annotated, Literal, Self, TypeAlias
 
 from pydantic import BaseModel, Field, model_validator
@@ -150,6 +150,13 @@ class _StringIdentifierBase(BaseModel, ABC):
 
     type: str
     value: str
+
+
+class _ValidationStrategyMixin(ABC):
+    """Base class for string identifiers with a type field."""
+
+    type: str
+    value: str
     validation_strategy: Literal["quick", "full", "recalculate"] = "quick"
 
     @model_validator(mode="after")
@@ -167,6 +174,7 @@ class _StringIdentifierBase(BaseModel, ABC):
         """Validate string identifier value (quick)."""
         pass
 
+    @abstractmethod
     def recalculate(self) -> str:
         """Recalculate string identifier value (no validation)."""
         msg = f"Recalculation is not implemented for type {self.type}"
@@ -189,7 +197,7 @@ class _StringIdentifierBase(BaseModel, ABC):
             raise ValueError(msg)
 
 
-class _StandardInChI(_StringIdentifierBase):
+class _StandardInChI(_StringIdentifierBase, _ValidationStrategyMixin):
     """Standard IUPAC International Chemical Identifier"""
 
     type: Literal["InChI"] = "InChI"
@@ -207,7 +215,7 @@ class _StandardInChI(_StringIdentifierBase):
         return MolBlockToInchi(mol_block)  # type: ignore
 
 
-class _FixedHInChI(_StringIdentifierBase):
+class _FixedHInChI(_StringIdentifierBase, _ValidationStrategyMixin):
     """IUPAC International Chemical Identifier generated with the fixed-H layer."""
 
     type: Literal["InChI-fixedH"] = "InChI-fixedH"
@@ -237,8 +245,8 @@ class _StandardInChIKey(_StringIdentifierBase):
     ]
 
 
-class _SMILES(_StringIdentifierBase):
-    """..."""
+class _SMILES(_StringIdentifierBase, _ValidationStrategyMixin):
+    """Simplified Molecular Input Line Entry System"""
 
     type: Literal["SMILES"] = "SMILES"
 
