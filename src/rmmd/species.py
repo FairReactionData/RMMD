@@ -14,9 +14,10 @@ from rdkit.Chem import (
     MolToSmiles,
 )
 
-from .keys import ConformationId, EntityKey, SpeciesName
-from .pes import ElectronicState, PesPath
-from .thermo import SpeciesThermo
+from rmmd.keys import ConformationId, EntityKey, SpeciesName
+from rmmd.kinetics import RateCoefficient
+from rmmd.pes import ElectronicState, PesPath
+from rmmd.thermo import ReactionThermo, SpeciesThermo
 
 
 class Species(BaseModel):
@@ -114,6 +115,10 @@ class Reaction(BaseModel):
     """A chemical reaction"""
 
     species: list[SpeciesRole]
+    thermo: list[ReactionThermo] = Field(default_factory=list)
+    """thermochemical properties for this reaction"""
+    rate_constants: list[RateCoefficient] = Field(default_factory=list)
+    """rate coefficients for this reaction"""
     pes_paths: list[PesPath] = Field(default_factory=list)
 
 
