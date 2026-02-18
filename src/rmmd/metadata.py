@@ -9,6 +9,7 @@ from pydantic import (
     BaseModel,
     Discriminator,
     Field,
+    PositiveInt,
     Tag,
     UrlConstraints,
 )
@@ -94,14 +95,61 @@ The reference is given as a Posix-style path relative to the RMMD file,
 starting with './'."""
 
 
+_Orcid = Annotated[
+    str, Field(pattern=r"^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
+]
+
+
+class _Person(BaseModel):
+    """Person involved in a citation, e.g., an author or editor.
+
+    cf. definitionperson in CFF schema"""
+
+    family_names: Annotated[str, Field(min_length=1, validation_alias="family-names")]
+    """full name of the person"""
+    given_names: Annotated[str, Field(min_length=1, validation_alias="given-names")]
+    """full name of the person"""
+    name_particle: (
+        Annotated[str, Field(min_length=1, validation_alias="name-particle")] | None
+    ) = None
+    """name particle, e.g., "van" in "Ludwig van Beethoven"
+    """
+    name_suffix: (
+        Annotated[str, Field(min_length=1, validation_alias="name-suffix")] | None
+    ) = None
+    """name suffix, e.g., "Jr." in "Martin Luther King Jr."
+    """
+    affiliation: Annotated[str, Field(min_length=1)] | None = None
+    """affiliation of the person"""
+    orcid: _Orcid | None = None
+    """ORCID identifier for the citation, if applicable"""
+
+
+class _Entity(BaseModel):
+    """Entity involved in a citation, e.g., an organization or institution."""
+
+    name: Annotated[str, Field(min_length=1)]
+    """name of the entity"""
+    address: Annotated[str, Field(min_length=1)] | None = None
+    """address of the entity"""
+    city: Annotated[str, Field(min_length=1)] | None = None
+    """city of the entity"""
+    country: Annotated[str, Field(min_length=1)] | None = None
+    """country of the entity"""
+    orcid: _Orcid | None = None
+    """ORCID identifier for the entity, if applicable"""
+
+
 class Citation(BaseModel):
     """Classic citation/reference using author, title, journal, etc."""
 
     title: Annotated[str, Field(min_length=1)]
 
     # TODO adapt from CFF, datacite, ...; do not reinvent the wheel
-    authors: list[str]
-    doi: Doi
+    authors: list[_Person | _Entity]
+    year: PositiveInt
+    doi: Doi | None = None
+    url: HttpUrlReference | None = None
 
 
 Reference = Doi | HttpUrlReference | Citation
