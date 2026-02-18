@@ -330,9 +330,6 @@ class Conformation(BaseModel):
 
     calculations: list[QcCalculationId] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
-    # TODO: really only allow one PointThermo per Point?
-    thermo: "PointThermo|None" = None
-    """thermochemical properties for this point, if it alone is considered"""
 
 
 ConformationalEnsemble = Annotated[
@@ -374,7 +371,3 @@ class PesPath(BaseModel):
     """product and reactant wells"""
     transition_state: TransitionState
     """transition state"""
-
-
-# avoid circular imports by importing here and using forward references above
-from rmmd.thermo import PointThermo  # noqa: E402
