@@ -163,7 +163,7 @@ class _ThermoTableBase(_ThermoPropertyBase):
         n_p = len(self.p)
         n_T = len(self.T)
 
-        for prop_name in ["c_p", "H", "S", "G"]:
+        for prop_name in ["Cp", "H", "S", "G"]:
             prop = getattr(self, prop_name, None)
             if prop is not None:
                 if len(prop) != n_p:
@@ -193,7 +193,7 @@ class ThermoTableNoRef(_ThermoTableBase):
 
     type: Literal["tabular thermo"] = "tabular thermo"
 
-    c_p: list[list[float]] | None = None
+    Cp: list[list[float]] | None = None
     """heat capacity in J/(mol K)
 
     n x m array of isobaric heat capacities, where n is the number of

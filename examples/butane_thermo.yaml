@@ -32,7 +32,7 @@ species:
       - type: "tabular thermo"
         T: [50, 100, 150, 298.15]
         p: [100_000]
-        c_p: [[38.07, 55.35, 67.32, 98.49]]
+        Cp: [[38.07, 55.35, 67.32, 98.49]]
         sources: [chen-1975]
 entities:
   IJDNQMDRQITEOD-UHFFFAOYNA-N:
