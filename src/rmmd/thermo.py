@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from annotated_types import MinLen
 from pydantic import BaseModel, Field, model_validator
-from rmmd.pes import ConformationalEnsemble, Software
-from rmmd.keys import CitationKey, QcCalculationId, SpeciesName
+from .pes import ConformationalEnsemble, Software
+from .keys import CitationKey, QcCalculationId, SpeciesName
 
 
 class _ThermoPropertyBase(BaseModel):

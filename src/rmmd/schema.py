@@ -1,7 +1,7 @@
 # Full Schema
 from typing import Literal
 
-from rmmd.thermo import STATE_1_BAR_298_K, ReferenceState
+from .thermo import STATE_1_BAR_298_K, ReferenceState
 
 from .keys import CitationKey, EntityKey, SpeciesName
 from .pes import Conformation, QmCalculation

@@ -14,10 +14,10 @@ from rdkit.Chem import (
     MolToSmiles,
 )
 
-from rmmd.keys import ConformationId, EntityKey, SpeciesName
-from rmmd.kinetics import RateCoefficient
-from rmmd.pes import ElectronicState, PesPath
-from rmmd.thermo import ReactionThermo, SpeciesThermo
+from .keys import ConformationId, EntityKey, SpeciesName
+from .kinetics import RateCoefficient
+from .pes import ElectronicState, PesPath
+from .thermo import ReactionThermo, SpeciesThermo
 
 
 class Species(BaseModel):
