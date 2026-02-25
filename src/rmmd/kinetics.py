@@ -44,4 +44,4 @@ class RateTable(_RateCoefficientBase):
 
 # TODO add rates from TST, master equation, etc.
 
-RateCoefficient = Annotated[ModifiedArrhenius, Field(discriminator="type")]
+RateCoefficient = Annotated[ModifiedArrhenius | RateTable, Field(discriminator="type")]

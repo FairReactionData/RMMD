@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal
-from pydantic import BaseModel, Field
-
+from annotated_types import MinLen
+from pydantic import BaseModel, Field, model_validator
 from .pes import ConformationalEnsemble, Software
-from .keys import CitationKey, QcCalculationId
+from .keys import CitationKey, QcCalculationId, SpeciesName
 
 
 class _ThermoPropertyBase(BaseModel):
@@ -17,13 +17,80 @@ class _ThermoPropertyBase(BaseModel):
 
     references: list[CitationKey] | None = None
     """Related literature describing how the data was obtained. Can be used in addition to the references list of the main dataset/schema."""
-    source: list[CitationKey] | None = None
+    sources: list[CitationKey] | None = None
     """where the data was obtained from"""
+
+
+###############################################################################
+# thermodynamic reference state
+###############################################################################
+
+
+class _ReferenceStateBase(BaseModel):
+    """base class for reference states"""
+
+    T: float
+    """reference temperature in K
+    """
+    p: float
+    """reference pressure in Pa"""
+    element_reference: Literal[
+        "most stable form",  # TODO deal with cases like phosphorus
+        "quantum chemistry",
+    ] = "most stable form"
+    """reference state for elements
+
+    - "most stable form": elements are in their most stable form at the given T and p
+    - "quantum chemistry": state where all electrons and nuclei are infinitely separated/non-interacting at 0 K.
+    """
+    description: str | None = None
+    """additional description of the reference state, e.g., level of theory
+    used for quantum chemistry ideal gas
+    """
+
+
+class ReferenceStatePure(_ReferenceStateBase):
+    """thermodynamic reference state for pure substances"""
+
+    p: float
+    """reference pressure in Pa"""
+
+
+class ReferenceStateSolute(_ReferenceStateBase):
+    """thermodynamic reference state for substances in a solvent"""
+
+    concentration: float
+    """reference concentration in mol/L"""
+    solvent: SpeciesName
+    """name of the solvent"""
+
+
+STATE_1_BAR_298_K = ReferenceStatePure(
+    T=298.15,
+    p=1e5,
+    element_reference="most stable form",
+)
+"""standard pressure (1 bar) and 298.15 K reference state
+"""
+
+
+ReferenceState = ReferenceStatePure | ReferenceStateSolute
+"""union data type for themodynamic reference state"""
+
+
+class _HasReferenceStateMixin(BaseModel):
+    """ "absolute" thermochemical properties are given with respect to a reference state"""
+
+    reference_state: ReferenceState | Literal["dataset default"] = "dataset default"
+    """thermodynamic reference state, i.e., the state at which the enthalpy of formation and entropy of formation of an element is zero
+    """
 
 
 ###############################################################################
 # established empirical models (data = fitted coefficients)
 ###############################################################################
+
+
 class _FittedToMixin(BaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
@@ -35,7 +102,7 @@ class _FittedToMixin(BaseModel):
     """
 
 
-class Nasa7(_ThermoPropertyBase, _FittedToMixin):
+class Nasa7(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
     """NASA polynomial with 7 coefficients."""
 
     type: Literal["NASA7"] = "NASA7"
@@ -46,7 +113,7 @@ class Nasa7(_ThermoPropertyBase, _FittedToMixin):
     """
 
 
-class Shomate(_ThermoPropertyBase, _FittedToMixin):
+class Shomate(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
     """Shomate polynomial with 7 coefficients."""
 
     type: Literal["Shomate"] = "Shomate"
@@ -64,24 +131,74 @@ class Shomate(_ThermoPropertyBase, _FittedToMixin):
 ###############################################################################
 
 
-class ThermoTable(_ThermoPropertyBase):
-    """thermochemical dataset for a specific species"""
+class _ThermoTableBase(_ThermoPropertyBase):
+    """base class for thermochemical tables"""
 
-    type: Literal["tabular thermo data"] = "tabular thermo data"
-    T: list[float]
+    T: Annotated[list[float], MinLen(1)]
     """Temperature points in K"""
-    p: list[float] | float
+    p: Annotated[list[float], MinLen(1)]
     """Pressure points in Pa"""
-    Cp: list[float] | None = None
-    """heat capacity in J/(mol K)"""
-    H: list[float] | None = None
-    """enthalpy in J/mol"""
-    S: list[float] | None = None
-    """entropy in J/(mol K)"""
-    G: list[float] | None = None
-    """Gibbs free energy in J/mol"""
 
-    # TODO add field for describing the reference states, e.g. standard formation enthalpies in gas phase, etc.
+    H: list[list[float]] | None = None
+    """enthalpy in J/mol
+
+    n x m array of enthalpies, where n is the number of
+    pressure points and m is the number of temperature points.
+    """
+    S: list[list[float]] | None = None
+    """entropy in J/(mol K)
+
+    n x m array of entropies, where n is the number of
+    pressure points and m is the number of temperature points."""
+    G: list[list[float]] | None = None
+    """Gibbs free energy in J/mol
+
+    n x m array of Gibbs free energies, where n is the number of
+    pressure points and m is the number of temperature points.
+    """
+
+    @model_validator(mode="after")
+    def check_dimensions(self):
+        """check that the dimensions of the data are consistent"""
+        n_p = len(self.p)
+        n_T = len(self.T)
+
+        for prop_name in ["Cp", "H", "S", "G"]:
+            prop = getattr(self, prop_name, None)
+            if prop is not None:
+                if len(prop) != n_p:
+                    raise ValueError(
+                        f"Number of rows in {prop_name} must be equal to the"
+                        "number of pressure points"
+                    )
+                for row in prop:
+                    if len(row) != n_T:
+                        raise ValueError(
+                            f"Number of columns in {prop_name} must be equal "
+                            "to the number of temperature points"
+                        )
+
+        return self
+
+
+class ThermoTable(_ThermoTableBase, _HasReferenceStateMixin):
+    """thermochemical dataset for a specific species in "absolute" terms, i.e.,
+    relative to a common reference state"""
+
+    type: Literal["absolute tabular thermo"] = "absolute tabular thermo"
+
+
+class ThermoTableNoRef(_ThermoTableBase):
+    """Thermodynamic properties without a reference state, e.g., difference in thermodynamic properties for two well-defined states such a reaction enthalpies."""
+
+    type: Literal["tabular thermo"] = "tabular thermo"
+
+    Cp: list[list[float]] | None = None
+    """heat capacity in J/(mol K)
+
+    n x m array of isobaric heat capacities, where n is the number of
+    pressure points and m is the number of temperature points.
+    """
 
 
 ###############################################################################
@@ -122,14 +239,18 @@ class BoltzmannWeightedEnsemble(_ThermoPropertyBase):
 # general
 ###############################################################################
 
+ReactionThermo = Annotated[
+    ThermoTableNoRef,
+    Field(discriminator="type"),
+]
+"""Thermochemical data for a specific reaction.
+"""
+
 SpeciesThermo = Annotated[
-    Nasa7 | Shomate | ThermoTable | BoltzmannWeightedEnsemble,
+    Nasa7 | Shomate | ThermoTable | BoltzmannWeightedEnsemble | ThermoTableNoRef,
     Field(discriminator="type"),
 ]
 """Thermochemical data for a specific species. Use this in type hints
 
 All thermoproperties need to have a type field.
 """
-
-PointThermo = Rrho
-"""Thermochemical data for a specific point on a potential energy surface."""

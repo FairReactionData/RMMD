@@ -15,8 +15,9 @@ from rdkit.Chem import (
 )
 
 from .keys import ConformationId, EntityKey, SpeciesName
+from .kinetics import RateCoefficient
 from .pes import ElectronicState, PesPath
-from .thermo import SpeciesThermo
+from .thermo import ReactionThermo, SpeciesThermo
 
 
 class Species(BaseModel):
@@ -114,6 +115,10 @@ class Reaction(BaseModel):
     """A chemical reaction"""
 
     species: list[SpeciesRole]
+    thermo: list[ReactionThermo] = Field(default_factory=list)
+    """thermochemical properties for this reaction"""
+    rate_constants: list[RateCoefficient] = Field(default_factory=list)
+    """rate coefficients for this reaction"""
     pes_paths: list[PesPath] = Field(default_factory=list)
 
 

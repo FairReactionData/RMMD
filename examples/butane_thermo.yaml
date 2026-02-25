@@ -14,12 +14,26 @@ species:
         coefficients:
           - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
           - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-        fitted_to: 1  # fittest to the other entry in the thermo list
+        fitted_to: 1  # fitted to entry 1 in the thermo list
       - type: "Boltzmann weighted ensemble"
         members: [[0, 1], [1, 2]]   # thermochemistry data of points 0 and 1
                                     # where point 1 is twice degenerate
         energy_expression: "G"  # the Gibbs free energy was used in the
                                 # Boltzmann factor (i.e. no simplification)
+      - type: "absolute tabular thermo"
+        T: [298]
+        p: [100_000]
+        H: [[125.6]]
+        sources: [pittam-1972]
+        reference_state:         # this reference state indicated that we
+          T: 298.15    # are using standard enthalpies of formation
+          p: 100_000
+          element_reference: "most stable form"
+      - type: "tabular thermo"
+        T: [50, 100, 150, 298.15]
+        p: [100_000]
+        Cp: [[38.07, 55.35, 67.32, 98.49]]
+        sources: [chen-1975]
 entities:
   IJDNQMDRQITEOD-UHFFFAOYNA-N:
     constitution: {C: 4, H: 10}
@@ -81,3 +95,24 @@ calculations:
       name: "ORCA"
       version: "5.0.3"
     source: ["./data/butane_spe_gauche.log"]
+literature:
+  pittam-1972:
+    title: "Measurements of heats of combustion by flame calorimetry. Part 8.—Methane, ethane, propane, n-butane and 2-methylpropane"
+    authors:
+      - given-names: "D. A."
+        family-names: "Pittam"
+      - given-names: "G."
+        family-names: "Pilcher"
+    year: 1972
+    doi: https://doi.org/10.1039/F19726802224
+  chen-1975:
+    title: "Ideal gas thermodynamic properties and isomerization of n-butane and isobutane"
+    authors:
+      - given-names: "S. S."
+        family-names: "Chen"
+      - given-names: "R. C."
+        family-names: "Wilhoit"
+      - given-names: "B. J."
+        family-names: "Zwolinski"
+    year: 1975
+    doi: https://doi.org/10.1063/1.555526

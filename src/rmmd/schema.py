@@ -1,6 +1,8 @@
 # Full Schema
 from typing import Literal
 
+from .thermo import STATE_1_BAR_298_K, ReferenceState
+
 from .keys import CitationKey, EntityKey, SpeciesName
 from .pes import Conformation, QmCalculation
 from .metadata import Citation, CitationKeyOrDirectReference, Reference
@@ -19,6 +21,8 @@ class Schema(BaseModel):
     """canonical representation of the species in the dataset. InChiKeys are generated including the fixed-H layer"""
     reactions: list[Reaction] = Field(default_factory=list)
     """reactions in the dataset"""
+    default_reference_state: ReferenceState = Field(default=STATE_1_BAR_298_K)
+    """default thermodynamic reference state for the dataset"""
 
     ### electronic structure view ###
     conformations: list[Conformation] = Field(default_factory=list)
