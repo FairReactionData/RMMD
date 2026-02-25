@@ -25,12 +25,7 @@ thermo:
     coefficients:
       - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
       - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-    fitted_to: thermo:1  # fitted to entry 1 in the thermo list
-  - type: "Boltzmann weighted ensemble"
-    # thermochemistry data of conformations 0 and 1 where 1 is twice degenerate
-    members: [[conformations:0, 1], [conformations:1, 2]]
-    energy_expression: "G"  # the Gibbs free energy was used in the
-                            # Boltzmann factor (i.e. no simplification)
+    fitted_to: "calculations:4"  # fittet to entry 4 in the calculations list
   - type: "absolute tabular thermo"
     T: [298]
     p: [100_000]
@@ -51,12 +46,6 @@ conformations:
       electronic_state: {charge: 0, spin: 0}
     calculation: [0, 2]   # ids in the calculation list
     description: "trans conformer of butane"
-    thermo:
-      type: RRHO
-      frequencies: 0  # from calculation 0
-      spe: 2  # from calculation 2
-      frequency_scaling: 0.99
-      rot_symmetry_nr: 1
   - domain:
       constitution: {C: 4, H: 10}
       electronic_state: {charge: 0, spin: 0}
@@ -69,34 +58,54 @@ conformations:
       frequency_scaling: 0.99
       rot_symmetry_nr: 1
 calculations:
-  - type: reference
+  - type: opt&freq
     level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
-    source: ["./data/butane_opt_trans.log"]
-  - type: reference
+    output: ["./data/butane_opt_trans.log"]
+  - type: opt&freq
     level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
-    source: ["./data/butane_opt_gauche.log"]
-  - type: reference
+    output: ["./data/butane_opt_gauche.log"]
+  - type: spe
     level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
-    source: ["./data/butane_spe_trans.log"]
-  - type: reference
+    output: ["./data/butane_spe_trans.log"]
+  - type: spe
     level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
-    source: ["./data/butane_spe_gauche.log"]
+    output: ["./data/butane_spe_gauche.log"]
+  - type: "thermo from QM"
+    software:
+      name: GoodVibes
+      version: "3.2"
+    input:
+      conformations:   # In this thermochemistry calculation, both conformations are
+                    # considered
+        conformations:0:
+          electronic_energy: calculations:2   # from calculation 2
+          frequencies: calculations:0         # from calculation 0
+          frequency_scaling: 0.99
+          rot_symmetry_nr: 1
+        conformations:1:
+          degeneracy: 2
+          electronic_energy: calculations:3
+          frequencies: calculations:1
+          frequency_scaling: 0.99
+          rot_symmetry_nr: 1
+      internal_rotors: Null   # no hindered rotor modeled
+    output: Null   # here, we could reference tabular thermodynamic data in the thermo list
 literature:
   pittam-1972:
     title: "Measurements of heats of combustion by flame calorimetry. Part 8.—Methane, ethane, propane, n-butane and 2-methylpropane"

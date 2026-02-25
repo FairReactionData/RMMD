@@ -1,14 +1,16 @@
 # Full Schema
 from typing import Annotated, Literal, TypeAlias
 
+from rmmd.calc import NestedCalculation
+
 from .kinetics import RateCoefficient
 
 from .thermo import (
     STATE_1_BAR_298_K,
-    BoltzmannWeightedEnsemble,
     EmpiricalThermo,
     ReferenceState,
     TabularThermo,
+    ThermoQmCalc,
 )
 
 from .keys import CitationKey, EntityKey, SpeciesName
@@ -19,12 +21,17 @@ from .species import MolecularEntity, Reaction, Species, TransportProperty
 from pydantic import BaseModel, Field
 
 
+# items in the thermo list below. Used for validation.
 _ThermoItem: TypeAlias = Annotated[
     # TODO replace BoltzmannWeithedEnsemble with more general ThermoCalculation
-    EmpiricalThermo | TabularThermo | BoltzmannWeightedEnsemble,
+    EmpiricalThermo | TabularThermo,
     Field(discriminator="type"),
 ]
-"""item in the thermo list below. Used for validation."""
+
+_CalculationItem: TypeAlias = Annotated[
+    QmCalculation | ThermoQmCalc | NestedCalculation,
+    Field(discriminator="type"),
+]
 
 
 class Schema(BaseModel, extra="forbid"):
@@ -50,7 +57,7 @@ class Schema(BaseModel, extra="forbid"):
     ### electronic structure view ###
     conformations: list[Conformation] = Field(default_factory=list)
     """conformations in the dataset"""
-    calculations: list[QmCalculation] = Field(default_factory=list)
+    calculations: list[_CalculationItem] = Field(default_factory=list)
     """quantum chemistry calculations"""
 
     ### metadata ###

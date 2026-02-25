@@ -15,13 +15,12 @@ from pydantic import (
     PositiveInt,
     model_validator,
 )
-
+from rmmd.calc import CalculationBase
 from .elements import ElementSymbol
-from .metadata import CitationKeyOrDirectReference
 from .keys import ConformationIdx, EntityKey, CalcIdx
 
 
-class ElectronicState(BaseModel):
+class ElectronicState(BaseModel, frozen=True):
     """Definition of the electronic state"""
 
     charge: int
@@ -45,7 +44,7 @@ class ElectronicState(BaseModel):
         return self
 
 
-class ElectronicStateWitSpin(ElectronicState):
+class ElectronicStateWitSpin(ElectronicState, frozen=True):
     """Electronic state with spin multiplicity
 
     This model should be used where the spin multiplicity is required, e.g., in
@@ -72,82 +71,6 @@ LevelOfTheory = Annotated[
 ###############################################################################
 # Quantum chemistry calculations & their metadata
 ###############################################################################
-
-
-class Software(BaseModel):
-    """computer software used to perform a calculation"""
-
-    name: str
-    version: str
-
-
-class _QmCalculationDataBase(BaseModel):
-    """base class for quantum chemistry calculations"""
-
-    level_of_theory: LevelOfTheory
-    """level of theory used"""
-    electronic_state: ElectronicState
-    """..."""
-    software: Software | None = None
-    """..."""
-
-    references: list[CitationKeyOrDirectReference] | None = None
-    """literature describing the calculation"""
-    source: list[CitationKeyOrDirectReference] | None = None
-    """source or location of the full QM data.
-
-    Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
-    ioChem-BD, ... The identifier of the source should not point to a whole
-    dataset of calculations, but to a single calculation or file in the
-    dataset."""
-
-
-class QmCalculationReference(BaseModel):
-    """reference to a quantum chemistry calculation in a public dataset"""
-
-    type: Literal["reference"] = "reference"
-    # for references this metadata is optional as we assume that the referenced
-    # dataset already contains the metadata
-    level_of_theory: LevelOfTheory | None = None
-    """level of theory used"""
-    electronic_state: ElectronicState | None = None
-    """electronic state of the calculation"""
-    software: Software | None = None
-    """..."""
-
-    references: list[CitationKeyOrDirectReference] | None = None
-    """literature describing the calculation"""
-    source: list[CitationKeyOrDirectReference]
-    """source or location of the QM calculation's data.
-
-    Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
-    ioChem-BD, ... The identifier of the source should not point to a whole
-    dataset of calculations, but to a single calculation or file in the
-    dataset."""
-
-
-class QmMultiCalculationData(BaseModel):
-    """Data from multi step calculations, e.g. Gaussian jobs with several --Link1-- steps, an ORCA compound job, or an IRC scan in both directions"""
-
-    type: Literal["nested"] = "nested"
-    """type of the calculation"""
-    # no need to use calculation id as the inner calculations are part of this
-    # calculation and should be referenced by this calculation's id
-    calculations: list[QmCalculationData]
-    """list of calculations that are part of this nested calculation"""
-
-    software: Software | None = None
-    """..."""
-
-    references: list[CitationKeyOrDirectReference] | None = None
-    """literature describing the calculation"""
-    source: list[CitationKeyOrDirectReference] | None = None
-    """source or location of the full QM data.
-
-    Ideally the full data is hosted in a specialized repository, e.g., NOMAD,
-    ioChem-BD, ... The identifier of the source should not point to a whole
-    dataset of calculations, but to a single calculation or file in the
-    dataset."""
 
 
 class Geometry(BaseModel):
@@ -202,11 +125,20 @@ class Geometries(BaseModel):
         return self
 
 
-class QmOptData(_QmCalculationDataBase):
+class _QmInput(BaseModel):
+    """input data for a quantum chemistry calculation"""
+
+    level_of_theory: LevelOfTheory
+    """level of theory used"""
+    electronic_state: ElectronicState
+    """electronic state for which the calculation was performed"""
+    geometry: Geometry | None = None
+    """geometry of the molecule for which the calculation was performed"""
+
+
+class _QmOptData(BaseModel):
     """Data from a geometry optimization calculation"""
 
-    type: Literal["opt", "ts"] = "opt"
-    """type of the calculation"""
     geometry: Geometry
     """geometry of the optimized structure"""
     total_electronic_energy: float
@@ -215,11 +147,41 @@ class QmOptData(_QmCalculationDataBase):
     """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
 
 
-class QmFreqData(_QmCalculationDataBase):
+class QmOptimization(CalculationBase[_QmInput, _QmOptData]):
+    """geometry optimization"""
+
+    type: Literal["opt", "ts"] = "opt"
+    """type of the calculation"""
+
+
+class _QmDihedralScanInput(_QmInput):
+    """input data for a dihedral angle scan"""
+
+    constraint: tuple[int, int, int, int]
+    """definition of the dihedral that should be scanned"""
+
+
+class _QmDihedralScanData(BaseModel):
+    """data from a dihedral angle scan"""
+
+    geometries: Geometries
+    """geometries of the scan"""
+    total_electronic_energies: list[float]
+    """total electronic energy in Hartree"""
+
+    # TODO add steps, boundary, etc.
+
+
+class QmDihedralScan(CalculationBase[_QmDihedralScanInput, _QmDihedralScanData]):
+    """dihedral angle scan"""
+
+    type: Literal["dihedral_scan"] = "dihedral_scan"
+    """type of the calculation"""
+
+
+class _QmFreqData(BaseModel):
     """Data from a frequency calculation"""
 
-    type: Literal["freq"] = "freq"
-    """type of the calculation"""
     frequencies: list[float]
     """frequencies in cm^-1"""
     total_electronic_energy: float
@@ -232,44 +194,38 @@ class QmFreqData(_QmCalculationDataBase):
     w.r.t. the coordinates [Hartree/Å]"""
 
 
-# TODO remove and use MultiCalculationData with opt and freq calculations instead?
-class QmOptFreqData(_QmCalculationDataBase):
+class QmFreqCalc(CalculationBase[_QmInput, _QmFreqData]):
+    """frequency calculation"""
+
+    type: Literal["freq"] = "freq"
+
+
+class _QmOptFreqData(_QmOptData, _QmFreqData):
     """Data from a geometry optimization calculation with frequencies"""
 
+
+class QmOptFreqCalc(CalculationBase[_QmInput, _QmOptFreqData]):
+    """geometry optimization with frequencies"""
+
     type: Literal["opt&freq", "ts&freq"] = "opt&freq"
-    """type of the calculation"""
-
-    frequencies: list[float]
-    """frequencies in cm^-1"""
-    geometry: Geometry
-    """geometry of the optimized structure"""
-    total_electronic_energy: float
-    """total electronic energy in Hartree"""
-    gradient: list[tuple[float, float, float]] | None = None
-    """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
-    rot_symmetry_nr: int | None = None
-    """rotational symmetry number"""
-    hessian: list[list[float]] | None = None
-    """Hessian matrix in atomic units, i.e. second derivatives of the energy
-    w.r.t. the coordinates [Hartree/Å]"""
-
-    # TODO add field, e.g. similar to how cclib, QCarchive, ... (focus on most important fields such as geometry, total electronic energy, frequencies, ...)
 
 
-class QmSpeData(_QmCalculationDataBase):
+class _QmSpeData(BaseModel):
     """Data from a single-point energy calculation"""
 
-    type: Literal["spe"] = "spe"
-    """type of the calculation"""
     total_electronic_energy: float
     """total electronic energy in Hartree"""
 
 
-class QmIrcData(_QmCalculationDataBase):
+class QmSpeCalc(CalculationBase[_QmInput, _QmSpeData]):
+    """single-point energy calculation"""
+
+    type: Literal["spe"] = "spe"
+
+
+class _QmIrcScanData(BaseModel):
     """Data from an intrinsic reaction coordinate scan in a single direction"""
 
-    type: Literal["irc"] = "irc"
-    """type of the calculation"""
     points: Geometries
     """geometries along the IRC path (inlcuding the transition state)"""
     total_electronic_energies: list[float]
@@ -283,19 +239,20 @@ class QmIrcData(_QmCalculationDataBase):
         return self
 
 
-QmCalculationData = Annotated[
-    QmOptData
-    | QmFreqData
-    | QmOptFreqData
-    | QmIrcData
-    | QmSpeData
-    | QmMultiCalculationData,
-    Field(discriminator="type"),
-]
-"""Data from a quantum chemistry calculation."""
+class QmIrcScan(CalculationBase[_QmInput, _QmIrcScanData]):
+    """intrinsic reaction coordinate scan"""
+
+    type: Literal["irc"] = "irc"
+
 
 QmCalculation = Annotated[
-    QmCalculationData | QmCalculationReference, Field(discriminator="type")
+    QmOptimization
+    | QmDihedralScan
+    | QmFreqCalc
+    | QmOptFreqCalc
+    | QmSpeCalc
+    | QmIrcScan,
+    Field(discriminator="type"),
 ]
 """There are two ways to supply quantum chemistry data, either directly by
 providing the geometries, frequencies, ..., or as a reference to a public
