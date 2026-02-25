@@ -1,12 +1,13 @@
 """contains "local names" of species, reactions, ...
 
-The use of local names/ids/keys is an implementation detail of the validation schema and realized differently in, e.g., a database. Here, we use names to avoid hierarchical structure and repetitions. This module is a separate module to avoid circular imports.
+The use of local names/ids/keys is an implementation detail of the validation schema and realized differently in, e.g., a database. Here, we use names to avoid hierarchical structure and repetitions. This module is a separate from schema to avoid circular imports in other models that use the keys defined here.
 """
 
-from pydantic import Field, RootModel, model_validator
+from __future__ import annotations
+from pydantic import BaseModel, Field, NonNegativeInt, model_serializer, model_validator
 
+from typing import Annotated, ClassVar
 
-from typing import Annotated
 
 CitationKey = Annotated[
     str,
@@ -46,32 +47,71 @@ EntityKey = Annotated[
 """key for a canonical representation of a species in the dataset, currently: InChIKey with fixed-H layer"""
 
 
-class QcCalculationId(RootModel[int | tuple[int, int]]):
-    """index of calculation in the list of calculations.
+class _ListIdx(BaseModel, frozen=True):
+    """base class for indices referencing items in lists of the root schema"""
 
-    Since multiple calculation jobs can be performed in a single run for many
-    quantum chemistry softwares, the id can be either a single integer
-    or a tuple of two integers."""
+    schema_field: ClassVar[str]
+    """name of the field in the root schema that this index references"""
+    value: NonNegativeInt
+    """index of the item in the list that this index references"""
+
+    # By implementing __index__, we can use instances of this class as indices in lists
+    def __index__(self) -> int:
+        return self.value
 
     @model_validator(mode="before")
-    def convert_from_string(cls, value: str) -> tuple[int, int] | int:
-        """A string "x.y" is converted to a tuple (x, y) or just x if y is not
-        present."""
-        if isinstance(value, str):
-            parts = value.split(".")
+    @classmethod
+    def convert_from_str(cls, data: dict | _ListIdx | str) -> dict | _ListIdx:
+        """for better readbility and clarity, indices are represented as strings in the format "<schema_field>:<integer>", e.g., "calculations:0". This validator converts such strings to the internal representation."""
+        if isinstance(data, str):
+            t, v = data.split(":", maxsplit=1)
+            if t != cls.schema_field:
+                raise ValueError(
+                    f"Invalid {cls.schema_field} index: expected string starting with "
+                    ""
+                    f"'{cls.schema_field}:', got '{data}'"
+                )
+            try:
+                v = int(v)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid {cls.schema_field} index: expected '{cls.schema_field}:"
+                    f"<integer>', got '{data}'"
+                )
 
-            for part in parts:
-                if not part.isdigit():
-                    raise ValueError("All parts must be integers")
+            return {"value": v, "schema_field": cls.schema_field}
+        return data
 
-            if len(parts) == 2:
-                return int(parts[0]), int(parts[1])
-            elif len(parts) == 1:
-                return int(parts[0])
-            else:
-                raise ValueError("Invalid format, expected 'X.Y' or 'X'")
-        return value
+    @model_serializer(mode="plain")
+    def serialize_model(self) -> str:
+        return f"{self.schema_field}:{self.value}"
 
 
-ConformationId = int
-"""index of a conformation in the list of conformations"""
+class CalcIdx(_ListIdx, frozen=True):
+    """index referencing a calculation in the root schema"""
+
+    schema_field: ClassVar[str] = "calculations"
+
+
+class ConformationIdx(_ListIdx, frozen=True):
+    """index referencing a conformation in the root schema"""
+
+    schema_field: ClassVar[str] = "conformations"
+
+
+class ThermoIdx(_ListIdx, frozen=True):
+    """index referencing a thermo calculation in the root schema"""
+
+    schema_field: ClassVar[str] = "thermo"
+
+
+class KineticsIdx(_ListIdx, frozen=True):
+    """index referencing a kinetics calculation in the root schema"""
+
+    schema_field: ClassVar[str] = "kinetics"
+
+
+class TransportIdx(_ListIdx, frozen=True):
+    """index referencing a transport property in the root schema"""
+
+    schema_field: ClassVar[str] = "transport"

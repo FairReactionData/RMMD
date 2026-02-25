@@ -6,34 +6,7 @@ species:
   C4H10:
     name: "Butane"
     entities: [IJDNQMDRQITEOD-UHFFFAOYNA-N]
-    thermo:
-      - type: "Shomate"
-        T_ranges:
-          - [298.15, 1000]
-          - [1000, 5000]
-        coefficients:
-          - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-          - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-        fitted_to: 1  # fitted to entry 1 in the thermo list
-      - type: "Boltzmann weighted ensemble"
-        members: [[0, 1], [1, 2]]   # thermochemistry data of points 0 and 1
-                                    # where point 1 is twice degenerate
-        energy_expression: "G"  # the Gibbs free energy was used in the
-                                # Boltzmann factor (i.e. no simplification)
-      - type: "absolute tabular thermo"
-        T: [298]
-        p: [100_000]
-        H: [[125.6]]
-        sources: [pittam-1972]
-        reference_state:         # this reference state indicated that we
-          T: 298.15    # are using standard enthalpies of formation
-          p: 100_000
-          element_reference: "most stable form"
-      - type: "tabular thermo"
-        T: [50, 100, 150, 298.15]
-        p: [100_000]
-        Cp: [[38.07, 55.35, 67.32, 98.49]]
-        sources: [chen-1975]
+    thermo: [thermo:0, thermo:1, thermo:2]
 entities:
   IJDNQMDRQITEOD-UHFFFAOYNA-N:
     constitution: {C: 4, H: 10}
@@ -43,7 +16,36 @@ entities:
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
       - type: "InChIKey"
         value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
-points:
+    conformations: [conformations:0, conformations:1]
+thermo:
+  - type: "Shomate"
+    T_ranges:
+      - [298.15, 1000]
+      - [1000, 5000]
+    coefficients:
+      - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
+      - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
+    fitted_to: thermo:1  # fitted to entry 1 in the thermo list
+  - type: "Boltzmann weighted ensemble"
+    # thermochemistry data of conformations 0 and 1 where 1 is twice degenerate
+    members: [[conformations:0, 1], [conformations:1, 2]]
+    energy_expression: "G"  # the Gibbs free energy was used in the
+                            # Boltzmann factor (i.e. no simplification)
+  - type: "absolute tabular thermo"
+    T: [298]
+    p: [100_000]
+    H: [[125.6]]
+    sources: [pittam-1972]
+    reference_state:         # this reference state indicated that we
+      T: 298.15    # are using standard enthalpies of formation
+      p: 100_000
+      element_reference: "most stable form"
+  - type: "tabular thermo"
+    T: [50, 100, 150, 298.15]
+    p: [100_000]
+    Cp: [[38.07, 55.35, 67.32, 98.49]]
+    sources: [chen-1975]
+conformations:
   - domain:
       constitution: {C: 4, H: 10}
       electronic_state: {charge: 0, spin: 0}

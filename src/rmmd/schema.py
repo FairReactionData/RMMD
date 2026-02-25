@@ -1,17 +1,33 @@
 # Full Schema
-from typing import Literal
+from typing import Annotated, Literal, TypeAlias
 
-from .thermo import STATE_1_BAR_298_K, ReferenceState
+from .kinetics import RateCoefficient
+
+from .thermo import (
+    STATE_1_BAR_298_K,
+    BoltzmannWeightedEnsemble,
+    EmpiricalThermo,
+    ReferenceState,
+    TabularThermo,
+)
 
 from .keys import CitationKey, EntityKey, SpeciesName
 from .pes import Conformation, QmCalculation
 from .metadata import Citation, CitationKeyOrDirectReference, Reference
-from .species import MolecularEntity, Reaction, Species
+from .species import MolecularEntity, Reaction, Species, TransportProperty
 
 from pydantic import BaseModel, Field
 
 
-class Schema(BaseModel):
+_ThermoItem: TypeAlias = Annotated[
+    # TODO replace BoltzmannWeithedEnsemble with more general ThermoCalculation
+    EmpiricalThermo | TabularThermo | BoltzmannWeightedEnsemble,
+    Field(discriminator="type"),
+]
+"""item in the thermo list below. Used for validation."""
+
+
+class Schema(BaseModel, extra="forbid"):
     """The final schema, encapsulating all information"""
 
     ### mechanism view ###
@@ -23,6 +39,13 @@ class Schema(BaseModel):
     """reactions in the dataset"""
     default_reference_state: ReferenceState = Field(default=STATE_1_BAR_298_K)
     """default thermodynamic reference state for the dataset"""
+    thermo: list[_ThermoItem] = Field(default_factory=list)
+    """thermodynamic models for species and reactions in the dataset,
+    e.g., NASA polynomials"""
+    transport: list[TransportProperty] = Field(default_factory=list)
+    """transport properties for species in the dataset"""
+    rate_coefficients: list[RateCoefficient] = Field(default_factory=list)
+    """kinetic models for reactions in the dataset, e.g., Arrhenius expressions or rate tables"""
 
     ### electronic structure view ###
     conformations: list[Conformation] = Field(default_factory=list)

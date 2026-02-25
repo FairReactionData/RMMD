@@ -14,10 +14,9 @@ from rdkit.Chem import (
     MolToSmiles,
 )
 
-from .keys import ConformationId, EntityKey, SpeciesName
+from .keys import ConformationIdx, EntityKey, SpeciesName, ThermoIdx, TransportIdx
 from .kinetics import RateCoefficient
 from .pes import ElectronicState, PesPath
-from .thermo import ReactionThermo, SpeciesThermo
 
 
 class Species(BaseModel):
@@ -32,9 +31,9 @@ class Species(BaseModel):
     entities can be described using only canonical representations, there
     automatically is a canonical representation for the species.
     """
-    thermo: list[SpeciesThermo] = Field(default_factory=list)
+    thermo: list[ThermoIdx] = Field(default_factory=list)
     """thermochemical properties for this species"""
-    transport: list[TransportProperty] = Field(default_factory=list)
+    transport: list[TransportIdx] = Field(default_factory=list)
     """transport properties for this species"""
 
 
@@ -54,11 +53,11 @@ class MolecularEntity(BaseModel):
     stereo: Stereochemistry | None = None
     electronic_state: ElectronicState | None = None
     """usually the ground state is assumed"""
-    defining_conformations: list[ConformationId] | Literal["all"] = "all"
+    defining_conformations: list[ConformationIdx] | Literal["all"] = "all"
     """While by default, all confomrations with the same stereochemistry and electronic state are considered part of the same molecular entitiy, this field can be used to restrict the set of conformations. In some cases,
     conformations have to belong to separate species to correctly model the kinetics of a system, but they have the same stereochemistry and electronic state. For example, different pre-reactive complexes where the fragements each have the same stereochemistry and electronic state, but different orientations relative to each other. In this case, the different pre-reactive complexes can be defined as different molecular entities with the same constitution, connectivity, stereo, and electronic state, but different defining_conformations.
     """
-    conformations: list[ConformationId] = Field(default_factory=list)
+    conformations: list[ConformationIdx] = Field(default_factory=list)
     """list of conformations that have been identified for this molecular entity.
 
     Expecially, if `defining_conformations` is "all" and the molecular
@@ -115,7 +114,7 @@ class Reaction(BaseModel):
     """A chemical reaction"""
 
     species: list[SpeciesRole]
-    thermo: list[ReactionThermo] = Field(default_factory=list)
+    thermo: list[ThermoIdx] = Field(default_factory=list)
     """thermochemical properties for this reaction"""
     rate_constants: list[RateCoefficient] = Field(default_factory=list)
     """rate coefficients for this reaction"""
