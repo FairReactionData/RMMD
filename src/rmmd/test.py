@@ -2,7 +2,7 @@
 
 import re
 from typing import Any, Self
-from pydantic import BaseModel, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from pydantic_core import ErrorDetails
 import pytest
 
@@ -43,11 +43,10 @@ class ExpectedError(BaseModel):
             )
         return self
 
-    class Config:
-        """Pydantic configuration."""
-
-        extra = "forbid"  # forbid additional fields
-        frozen = True  # make instances immutable
+    model_config = ConfigDict(
+        frozen=True,  # make instances immutable
+        extra="forbid",  # forbid additional fields
+    )
 
     def is_equivalent_to_error(self, error: ErrorDetails) -> bool:
         """Check if this expected error is equivalent to the given error."""
