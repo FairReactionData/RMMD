@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal
-from annotated_types import MinLen
+
+from annotated_types import MaxLen, MinLen
 from pydantic import BaseModel, model_validator
+
 from .calc import CalculationBase
-from .keys import CitationKey, CalcIdx, ConformationIdx, SpeciesName, ThermoIdx
+from .keys import (
+    CalcIdx,
+    CitationKey,
+    ConformationIdx,
+    SpeciesName,
+    ThermoIdx,
+)
 
 
 class _ThermoPropertyBase(BaseModel):
@@ -108,8 +116,19 @@ class Nasa7(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
     type: Literal["NASA7"] = "NASA7"
     T_ranges: list[tuple[float, float]]
     """Temperature ranges for the polynomial, in K"""
-    coefficients: list[list[float]]
+    coefficients: list[Annotated[list[float], MinLen(7), MaxLen(7)]]
     """coefficients for the polynomial in the form: [a1, a2, a3, a4, a5, a6, a7] for each temperature range
+    """
+
+
+class Nasa9(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
+    """NASA polynomial with 9 coefficients."""
+
+    type: Literal["NASA9"] = "NASA9"
+    T_ranges: list[tuple[float, float]]
+    """Temperature ranges for the polynomial, in K"""
+    coefficients: list[Annotated[list[float], MinLen(9), MaxLen(9)]]
+    """coefficients for the polynomial in the form: [a1, a2, a3, a4, a5, a6, a7, a8, a9] for each temperature range
     """
 
 
@@ -124,7 +143,21 @@ class Shomate(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
     """
 
 
-# TODO add more thermochemistry models (e.g. all that Cantera supports)
+class ConstantCp(_ThermoPropertyBase, _HasReferenceStateMixin):
+    """Constant heat capacity model."""
+
+    type: Literal["constant-cp"] = "constant-cp"
+
+    T_range: tuple[float, float]
+    """Temperature range in K over which the model is valid"""
+
+    H0: float
+    """enthalpy at reference temperature in J/mol"""
+    S0: float
+    """entropy at reference temperature in J/(mol K)"""
+    Cp: float
+    """constant heat capacity in J/(mol K)"""
+
 
 EmpiricalThermo = Nasa7 | Shomate
 
