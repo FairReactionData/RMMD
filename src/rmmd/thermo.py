@@ -110,7 +110,26 @@ class _FittedToMixin(BaseModel):
     """
 
 
-class Nasa7(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
+class _CoefficientsTRangesMixin(BaseModel):
+    T_ranges: list[tuple[float, float]]
+    coefficients: list[list[float]]
+
+    @model_validator(mode="after")
+    def check_T_ranges_and_coefficients(self):
+        """check that the number of temperature ranges matches the number of coefficient sets"""
+        if len(self.T_ranges) != len(self.coefficients):
+            raise ValueError(
+                "Number of temperature ranges must match the number of coefficient sets"
+            )
+        return self
+
+
+class Nasa7(
+    _ThermoPropertyBase,
+    _FittedToMixin,
+    _HasReferenceStateMixin,
+    _CoefficientsTRangesMixin,
+):
     """NASA polynomial with 7 coefficients."""
 
     type: Literal["NASA7"] = "NASA7"
@@ -121,7 +140,12 @@ class Nasa7(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
     """
 
 
-class Nasa9(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
+class Nasa9(
+    _ThermoPropertyBase,
+    _FittedToMixin,
+    _HasReferenceStateMixin,
+    _CoefficientsTRangesMixin,
+):
     """NASA polynomial with 9 coefficients."""
 
     type: Literal["NASA9"] = "NASA9"
@@ -132,13 +156,18 @@ class Nasa9(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
     """
 
 
-class Shomate(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
+class Shomate(
+    _ThermoPropertyBase,
+    _FittedToMixin,
+    _HasReferenceStateMixin,
+    _CoefficientsTRangesMixin,
+):
     """Shomate polynomial with 7 coefficients."""
 
     type: Literal["Shomate"] = "Shomate"
     T_ranges: list[tuple[float, float]]
     """Temperature ranges for the polynomial, in K"""
-    coefficients: list[list[float]]
+    coefficients: list[Annotated[list[float], MinLen(7), MaxLen(7)]]
     """coefficients for the polynomial in the form: [a1, a2, a3, a4, a5, a6, a7] for each temperature range
     """
 
