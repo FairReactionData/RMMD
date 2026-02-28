@@ -116,7 +116,7 @@ class TransportProperty(BaseModel):
     """
     rotational_relaxation: float = 0.0
     """rotational relaxation collision number"""
-    accentric_factor = 0.0
+    accentric_factor: float = 0.0
     """Pitzer's accentric factor"""
     dispersion_coefficient: float = 0.0
     """dispersion coefficient normalized by e^2 in angstroms^5"""
