@@ -47,7 +47,7 @@ EntityKey = Annotated[
 """key for a canonical representation of a species in the dataset, currently: InChIKey with fixed-H layer"""
 
 
-class _ListIdx(BaseModel, frozen=True):
+class _ListIndex(BaseModel, frozen=True):
     """base class for indices referencing items in lists of the root schema"""
 
     schema_field: ClassVar[str]
@@ -61,7 +61,7 @@ class _ListIdx(BaseModel, frozen=True):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_from_str(cls, data: dict | _ListIdx | str) -> dict | _ListIdx:
+    def convert_from_str(cls, data: dict | _ListIndex | str) -> dict | _ListIndex:
         """for better readbility and clarity, indices are represented as strings in the format "<schema_field>:<integer>", e.g., "calculations:0". This validator converts such strings to the internal representation."""
         if isinstance(data, str):
             t, v = data.split(":", maxsplit=1)
@@ -87,31 +87,31 @@ class _ListIdx(BaseModel, frozen=True):
         return f"{self.schema_field}:{self.value}"
 
 
-class CalcIdx(_ListIdx, frozen=True):
+class CalcIndex(_ListIndex, frozen=True):
     """index referencing a calculation in the root schema"""
 
     schema_field: ClassVar[str] = "calculations"
 
 
-class ConformationIdx(_ListIdx, frozen=True):
+class ConformationIndex(_ListIndex, frozen=True):
     """index referencing a conformation in the root schema"""
 
     schema_field: ClassVar[str] = "conformations"
 
 
-class ThermoIdx(_ListIdx, frozen=True):
+class ThermoIndex(_ListIndex, frozen=True):
     """index referencing a thermo calculation in the root schema"""
 
     schema_field: ClassVar[str] = "thermo"
 
 
-class KineticsIdx(_ListIdx, frozen=True):
+class KineticsIndex(_ListIndex, frozen=True):
     """index referencing a kinetics calculation in the root schema"""
 
     schema_field: ClassVar[str] = "kinetics"
 
 
-class TransportIdx(_ListIdx, frozen=True):
+class TransportIndex(_ListIndex, frozen=True):
     """index referencing a transport property in the root schema"""
 
     schema_field: ClassVar[str] = "transport"

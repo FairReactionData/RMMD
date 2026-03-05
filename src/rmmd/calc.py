@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Generic, Literal, TypeVar
 from annotated_types import MinLen
 from pydantic import BaseModel
-from rmmd.keys import CalcIdx
+from rmmd.keys import CalcIndex
 from rmmd.metadata import CitationKeyOrDirectReference, HttpUrlReference
 
 InputT = TypeVar("InputT")
@@ -71,7 +71,7 @@ class NestedCalculation(CalculationBase[InputT, OutputT]):
     type: Literal["nested"] = "nested"
     """type of the calculation"""
 
-    calculations: Annotated[list[CalcIdx], MinLen(2)]
+    calculations: Annotated[list[CalcIndex], MinLen(2)]
     """list of calculation ids that are referenced together in this nested
     calculation
     """
