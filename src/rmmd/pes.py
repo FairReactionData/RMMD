@@ -18,7 +18,7 @@ from pydantic import (
 
 from .elements import ElementSymbol
 from .metadata import CitationKeyOrDirectReference
-from .keys import ConformationIdx, EntityKey, CalcIdx
+from .keys import ConformationIndex, EntityKey, CalcIndex
 
 
 class ElectronicState(BaseModel):
@@ -328,12 +328,12 @@ class Conformation(BaseModel):
     description: str | None = None
     """human-readable description of the point"""
 
-    calculations: list[CalcIdx] = Field(default_factory=list)
+    calculations: list[CalcIndex] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
 
 
 ConformationalEnsemble = Annotated[
-    list[tuple[ConformationIdx, PositiveInt]], Field(min_length=1)
+    list[tuple[ConformationIndex, PositiveInt]], Field(min_length=1)
 ]
 """ensemble of conformations
 
@@ -347,7 +347,7 @@ trans conformer and 1 and 2 are points representing the two mirror images of
 the gauche conformer.
 """
 
-PointSequence = Annotated[list[ConformationIdx], Field(min_length=1)]
+PointSequence = Annotated[list[ConformationIndex], Field(min_length=1)]
 """path connecting stationary points on a potential energy surface, e.g., a
 IRC path, frozen scane, ...
 """
