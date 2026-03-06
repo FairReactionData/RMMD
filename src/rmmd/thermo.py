@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from annotated_types import MinLen
 from pydantic import BaseModel, Field, model_validator
 from .pes import ConformationalEnsemble, Software
-from .keys import CitationKey, QcCalculationId, SpeciesName
+from .keys import CitationKey, CalcIndex, SpeciesName, ThermoIndex
 
 
 class _ThermoPropertyBase(BaseModel):
@@ -94,7 +94,7 @@ class _HasReferenceStateMixin(BaseModel):
 class _FittedToMixin(BaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
-    fitted_to: list[CitationKey] | int | None = None
+    fitted_to: list[CitationKey] | ThermoIndex | CalcIndex | None = None
     """data/model that the coefficients of this model were fitted to.
 
     If the model was fitted to data form this dataset, an integer (starting at
@@ -125,6 +125,9 @@ class Shomate(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
 
 
 # TODO add more thermochemistry models (e.g. all that Cantera supports)
+
+EmpiricalThermo = Nasa7 | Shomate
+
 
 ###############################################################################
 # raw thermochemical data
@@ -201,6 +204,8 @@ class ThermoTableNoRef(_ThermoTableBase):
     """
 
 
+TabularThermo = ThermoTable | ThermoTableNoRef
+
 ###############################################################################
 # quantum chemistry models
 ###############################################################################
@@ -211,10 +216,10 @@ class Rrho(_ThermoPropertyBase):
 
     type: Literal["RRHO"] = "RRHO"
 
-    frequencies: QcCalculationId  # link to QcCalculation?
+    frequencies: CalcIndex  # link to QcCalculation?
     frequency_scaling: float  # TODO value + type + source
     quasi_harmonic_approx: str | None = None
-    spe: QcCalculationId
+    spe: CalcIndex
     rot_symmetry_nr: int  # TODO source + value
     """rotational symmetry number"""
     software: Software | None = None
