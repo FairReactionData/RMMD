@@ -100,6 +100,27 @@ class MolecularEntity(BaseModel):
 class TransportProperty(BaseModel):
     """Transport property for species"""
 
+    shape: Literal["atom", "linear", "nonlinear"]
+    """whether the molecule is point-like ("atom"), linear, or non-linear."""
+    dipole_moment: float | None = None
+    """dipole moment in Debye"""
+    polarizability: float | None = None
+    """polarizability in cubic angstroms"""
+    quadrupole_polarizability: float = 0.0
+    """quadrupole polarizability in angstrom^5"""
+    lj_sigma: float
+    """Lennard-Jones collision diameter in angstroms"""
+    lj_eps_over_kb: float
+    """Lennard-Jones well-depth (epsilon) divided by Boltzmann constant in K for
+    transport property calculations
+    """
+    rotational_relaxation: float = 0.0
+    """rotational relaxation collision number"""
+    acentric_factor: float = 0.0
+    """Pitzer's acentric factor"""
+    dispersion_coefficient: float = 0.0
+    """dispersion coefficient normalized by e^2 in angstroms^5"""
+
 
 class SpeciesRole(BaseModel):
     """Node in a reaction network"""

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal
-from annotated_types import MinLen
+
+from annotated_types import MaxLen, MinLen
 from pydantic import BaseModel, model_validator
+
 from .calc import CalculationBase
 from .keys import CitationKey, CalcIndex, ConformationIndex, SpeciesName, ThermoIndex
 
@@ -102,29 +104,83 @@ class _FittedToMixin(BaseModel):
     """
 
 
-class Nasa7(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
+class _CoefficientsTRangesMixin(BaseModel):
+    T_ranges: list[tuple[float, float]]
+    coefficients: list[list[float]]
+
+    @model_validator(mode="after")
+    def check_T_ranges_and_coefficients(self):
+        """check that the number of temperature ranges matches the number of coefficient sets"""
+        if len(self.T_ranges) != len(self.coefficients):
+            raise ValueError(
+                "Number of temperature ranges must match the number of coefficient sets"
+            )
+        return self
+
+
+class Nasa7(
+    _ThermoPropertyBase,
+    _FittedToMixin,
+    _HasReferenceStateMixin,
+    _CoefficientsTRangesMixin,
+):
     """NASA polynomial with 7 coefficients."""
 
     type: Literal["NASA7"] = "NASA7"
     T_ranges: list[tuple[float, float]]
     """Temperature ranges for the polynomial, in K"""
-    coefficients: list[list[float]]
+    coefficients: list[Annotated[list[float], MinLen(7), MaxLen(7)]]
     """coefficients for the polynomial in the form: [a1, a2, a3, a4, a5, a6, a7] for each temperature range
     """
 
 
-class Shomate(_ThermoPropertyBase, _FittedToMixin, _HasReferenceStateMixin):
+class Nasa9(
+    _ThermoPropertyBase,
+    _FittedToMixin,
+    _HasReferenceStateMixin,
+    _CoefficientsTRangesMixin,
+):
+    """NASA polynomial with 9 coefficients."""
+
+    type: Literal["NASA9"] = "NASA9"
+    T_ranges: list[tuple[float, float]]
+    """Temperature ranges for the polynomial, in K"""
+    coefficients: list[Annotated[list[float], MinLen(9), MaxLen(9)]]
+    """coefficients for the polynomial in the form: [a1, a2, a3, a4, a5, a6, a7, a8, a9] for each temperature range
+    """
+
+
+class Shomate(
+    _ThermoPropertyBase,
+    _FittedToMixin,
+    _HasReferenceStateMixin,
+    _CoefficientsTRangesMixin,
+):
     """Shomate polynomial with 7 coefficients."""
 
     type: Literal["Shomate"] = "Shomate"
     T_ranges: list[tuple[float, float]]
     """Temperature ranges for the polynomial, in K"""
-    coefficients: list[list[float]]
+    coefficients: list[Annotated[list[float], MinLen(7), MaxLen(7)]]
     """coefficients for the polynomial in the form: [a1, a2, a3, a4, a5, a6, a7] for each temperature range
     """
 
 
-# TODO add more thermochemistry models (e.g. all that Cantera supports)
+class ConstantCp(_ThermoPropertyBase, _HasReferenceStateMixin):
+    """Constant heat capacity model."""
+
+    type: Literal["constant-cp"] = "constant-cp"
+
+    T_range: tuple[float, float]
+    """Temperature range in K over which the model is valid"""
+
+    H0: float
+    """enthalpy at reference temperature in J/mol"""
+    S0: float
+    """entropy at reference temperature in J/(mol K)"""
+    Cp: float
+    """constant heat capacity in J/(mol K)"""
+
 
 EmpiricalThermo = Nasa7 | Shomate
 
