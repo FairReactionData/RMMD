@@ -5,13 +5,14 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from annotated_types import MaxLen, MinLen
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 
+from ._base import RmmdBaseModel
 from .calc import CalculationBase
-from .keys import CitationKey, CalcIndex, ConformationIndex, SpeciesName, ThermoIndex
+from .keys import CalcIndex, CitationKey, ConformationIndex, SpeciesName, ThermoIndex
 
 
-class _ThermoPropertyBase(BaseModel):
+class _ThermoPropertyBase(RmmdBaseModel):
     """Base class for thermochemical properties"""
 
     type: str
@@ -28,7 +29,7 @@ class _ThermoPropertyBase(BaseModel):
 ###############################################################################
 
 
-class _ReferenceStateBase(BaseModel):
+class _ReferenceStateBase(RmmdBaseModel):
     """base class for reference states"""
 
     T: float
@@ -80,7 +81,7 @@ ReferenceState = ReferenceStatePure | ReferenceStateSolute
 """union data type for themodynamic reference state"""
 
 
-class _HasReferenceStateMixin(BaseModel):
+class _HasReferenceStateMixin(RmmdBaseModel):
     """ "absolute" thermochemical properties are given with respect to a reference state"""
 
     reference_state: ReferenceState | Literal["dataset default"] = "dataset default"
@@ -93,7 +94,7 @@ class _HasReferenceStateMixin(BaseModel):
 ###############################################################################
 
 
-class _FittedToMixin(BaseModel):
+class _FittedToMixin(RmmdBaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
     fitted_to: list[CitationKey] | ThermoIndex | CalcIndex | None = None
@@ -104,7 +105,7 @@ class _FittedToMixin(BaseModel):
     """
 
 
-class _CoefficientsTRangesMixin(BaseModel):
+class _CoefficientsTRangesMixin(RmmdBaseModel):
     T_ranges: list[tuple[float, float]]
     coefficients: list[list[float]]
 
@@ -267,7 +268,7 @@ TabularThermo = ThermoTable | ThermoTableNoRef
 ###############################################################################
 
 
-class QmThermoCalcInput(BaseModel):
+class QmThermoCalcInput(RmmdBaseModel):
     """data for thermochemical calculations derived from quantum
     chemistry calculations
     """
@@ -283,7 +284,7 @@ class QmThermoCalcInput(BaseModel):
     """data for internal rotors"""
 
 
-class _SingleRotorData(BaseModel):
+class _SingleRotorData(RmmdBaseModel):
     """thermochemical data for rotors"""
 
     electronic_energies: list[CalcIndex]
@@ -301,7 +302,7 @@ class _SingleRotorData(BaseModel):
     # TODO pivot points?
 
 
-class _NDRotorData(BaseModel):
+class _NDRotorData(RmmdBaseModel):
     """thermochemical data for N-dimensional rotors
 
     n may be 1 for a hindered rotor
@@ -310,7 +311,7 @@ class _NDRotorData(BaseModel):
     rotos: Annotated[list[_SingleRotorData], MinLen(1)]
 
 
-class ConformationThermoData(BaseModel):
+class ConformationThermoData(RmmdBaseModel):
     """Quantum chemistry-derived thermochemical properties for a single
     conformation
     """

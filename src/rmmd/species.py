@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal, Self, TypeAlias
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 from rdkit.Chem import (
     MolBlockToInchi,
     MolFromInchi,
@@ -14,12 +14,13 @@ from rdkit.Chem import (
     MolToSmiles,
 )
 
+from ._base import RmmdBaseModel
 from .keys import ConformationIndex, EntityKey, SpeciesName, ThermoIndex, TransportIndex
 from .kinetics import RateCoefficient
 from .pes import ElectronicState, PesPath
 
 
-class Species(BaseModel):
+class Species(RmmdBaseModel):
     """A chemical species."""
 
     name: str | None = None
@@ -37,7 +38,7 @@ class Species(BaseModel):
     """transport properties for this species"""
 
 
-class MolecularEntity(BaseModel):
+class MolecularEntity(RmmdBaseModel):
     """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
     Here, flexible conformational spatial rearrangements are by default not distinguished, i.e., a molecular entity can have multiple conformers.
@@ -97,7 +98,7 @@ class MolecularEntity(BaseModel):
     # TODO better canoncial representation of each layer
 
 
-class TransportProperty(BaseModel):
+class TransportProperty(RmmdBaseModel):
     """Transport property for species"""
 
     shape: Literal["atom", "linear", "nonlinear"]
@@ -122,7 +123,7 @@ class TransportProperty(BaseModel):
     """dispersion coefficient normalized by e^2 in angstroms^5"""
 
 
-class SpeciesRole(BaseModel):
+class SpeciesRole(RmmdBaseModel):
     """Node in a reaction network"""
 
     # can be extended, if necessary, subclasses for some roles can
@@ -131,7 +132,7 @@ class SpeciesRole(BaseModel):
     species: SpeciesName
 
 
-class Reaction(BaseModel):
+class Reaction(RmmdBaseModel):
     """A chemical reaction"""
 
     species: list[SpeciesRole]
@@ -157,20 +158,20 @@ Constitution = Annotated[
 
 
 # TODO use existing standard (e.g. "non-standard" InChI with fixed-H layer) or define canonical numbering of atoms, ...?
-class MolecularConnectivity(BaseModel):
+class MolecularConnectivity(RmmdBaseModel):
     """Connectivity between atoms"""
 
     # TODO graph data structure + canonical form for easy comparison
     # TODO special values for formed and broken bonds (for transition states, etc.)
 
 
-class Stereochemistry(BaseModel):
+class Stereochemistry(RmmdBaseModel):
     """Definition of the Stereochemistry"""
 
     # TODO define via stereocenters
 
 
-class _StringIdentifierBase(BaseModel, ABC):
+class _StringIdentifierBase(RmmdBaseModel, ABC):
     """Base class for string identifiers with a type field."""
 
     type: str
@@ -299,7 +300,7 @@ StringIdentifier: TypeAlias = Annotated[
 """string identifier for a molecular entity"""
 
 
-class _StringIdentifierTest(BaseModel):
+class _StringIdentifierTest(RmmdBaseModel):
     """class for testing the Geometry and Geometries classes"""
 
     string_identifier_list: list[StringIdentifier]

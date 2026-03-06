@@ -4,9 +4,11 @@ The use of local names/ids/keys is an implementation detail of the validation sc
 """
 
 from __future__ import annotations
-from pydantic import BaseModel, Field, NonNegativeInt, model_serializer, model_validator
+from typing import Annotated, Literal
 
-from typing import Annotated, ClassVar
+from pydantic import Field, NonNegativeInt, model_serializer, model_validator
+
+from ._base import RmmdFrozenBaseModel
 
 
 CitationKey = Annotated[
@@ -47,10 +49,10 @@ EntityKey = Annotated[
 """key for a canonical representation of a species in the dataset, currently: InChIKey with fixed-H layer"""
 
 
-class _ListIndex(BaseModel, frozen=True):
+class _ListIndex(RmmdFrozenBaseModel, frozen=True):
     """base class for indices referencing items in lists of the root schema"""
 
-    schema_field: ClassVar[str]
+    schema_field: str
     """name of the field in the root schema that this index references"""
     value: NonNegativeInt
     """index of the item in the list that this index references"""
@@ -65,21 +67,22 @@ class _ListIndex(BaseModel, frozen=True):
         """for better readbility and clarity, indices are represented as strings in the format "<schema_field>:<integer>", e.g., "calculations:0". This validator converts such strings to the internal representation."""
         if isinstance(data, str):
             t, v = data.split(":", maxsplit=1)
-            if t != cls.schema_field:
+            schema_field = cls.model_fields["schema_field"].default
+            if t != schema_field:
                 raise ValueError(
-                    f"Invalid {cls.schema_field} index: expected string starting with "
+                    f"Invalid {schema_field} index: expected string starting with "
                     ""
-                    f"'{cls.schema_field}:', got '{data}'"
+                    f"'{schema_field}:', got '{data}'"
                 )
             try:
                 v = int(v)
             except ValueError:
                 raise ValueError(
-                    f"Invalid {cls.schema_field} index: expected '{cls.schema_field}:"
+                    f"Invalid {schema_field} index: expected '{schema_field}:"
                     f"<integer>', got '{data}'"
                 )
 
-            return {"value": v, "schema_field": cls.schema_field}
+            return {"value": v, "schema_field": schema_field}
         return data
 
     @model_serializer(mode="plain")
@@ -90,28 +93,28 @@ class _ListIndex(BaseModel, frozen=True):
 class CalcIndex(_ListIndex, frozen=True):
     """index referencing a calculation in the root schema"""
 
-    schema_field: ClassVar[str] = "calculations"
+    schema_field: Literal["calculations"] = "calculations"
 
 
 class ConformationIndex(_ListIndex, frozen=True):
     """index referencing a conformation in the root schema"""
 
-    schema_field: ClassVar[str] = "conformations"
+    schema_field: Literal["conformations"] = "conformations"
 
 
 class ThermoIndex(_ListIndex, frozen=True):
     """index referencing a thermo calculation in the root schema"""
 
-    schema_field: ClassVar[str] = "thermo"
+    schema_field: Literal["thermo"] = "thermo"
 
 
 class KineticsIndex(_ListIndex, frozen=True):
     """index referencing a kinetics calculation in the root schema"""
 
-    schema_field: ClassVar[str] = "kinetics"
+    schema_field: Literal["kinetics"] = "kinetics"
 
 
 class TransportIndex(_ListIndex, frozen=True):
     """index referencing a transport property in the root schema"""
 
-    schema_field: ClassVar[str] = "transport"
+    schema_field: Literal["transport"] = "transport"
