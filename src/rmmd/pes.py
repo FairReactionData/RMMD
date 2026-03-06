@@ -9,18 +9,19 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeAlias
 
 from pydantic import (
-    BaseModel,
     Field,
     NonNegativeInt,
     PositiveInt,
     model_validator,
 )
-from rmmd.calc import CalculationBase
+
+from ._base import RmmdBaseModel
+from .calc import CalculationBase
 from .elements import ElementSymbol
-from .keys import ConformationIndex, EntityKey, CalcIndex
+from .keys import CalcIndex, ConformationIndex, EntityKey
 
 
-class ElectronicState(BaseModel, frozen=True):
+class ElectronicState(RmmdBaseModel, frozen=True):
     """Definition of the electronic state"""
 
     charge: int
@@ -73,7 +74,7 @@ LevelOfTheory = Annotated[
 ###############################################################################
 
 
-class Geometry(BaseModel):
+class Geometry(RmmdBaseModel):
     """molecular structure/geometry"""
 
     atoms: list[ElementSymbol]
@@ -98,7 +99,7 @@ class Geometry(BaseModel):
         return self
 
 
-class Geometries(BaseModel):
+class Geometries(RmmdBaseModel):
     """list of geometries with the same order of atoms"""
 
     atoms: list[ElementSymbol]
@@ -141,7 +142,7 @@ involved
 """
 
 
-class _QmInput(BaseModel):
+class _QmInput(RmmdBaseModel):
     """input data for a quantum chemistry calculation"""
 
     level_of_theory: LevelOfTheory
@@ -161,7 +162,7 @@ class _QmOptInput(_QmInput):
     """constraints on the internal coordinates during the optimization"""
 
 
-class _QmOptData(BaseModel):
+class _QmOptData(RmmdBaseModel):
     """Data from a geometry optimization calculation"""
 
     geometry: Geometry
@@ -194,7 +195,7 @@ class _QmScanInput(_QmInput):
     """constraints on the internal coordinates during a relaxed scan"""
 
 
-class _QmScanData(BaseModel):
+class _QmScanData(RmmdBaseModel):
     """data from a dihedral angle scan"""
 
     geometries: Geometries
@@ -212,7 +213,7 @@ class QmScan(CalculationBase[_QmScanInput, _QmScanData]):
     """type of the calculation"""
 
 
-class _QmFreqData(BaseModel):
+class _QmFreqData(RmmdBaseModel):
     """Data from a frequency calculation"""
 
     frequencies: list[float]
@@ -245,7 +246,7 @@ class QmOptFreqCalc(CalculationBase[_QmInput, _QmOptFreqData]):
     )
 
 
-class _QmEnergyData(BaseModel):
+class _QmEnergyData(RmmdBaseModel):
     """Data from a single-point energy calculation"""
 
     total_electronic_energy: float
@@ -258,7 +259,7 @@ class QmEnergyCalc(CalculationBase[_QmInput, _QmEnergyData]):
     type: Literal["qm-energy"] = "qm-energy"
 
 
-class _QmIrcScanData(BaseModel):
+class _QmIrcScanData(RmmdBaseModel):
     """Data from an intrinsic reaction coordinate scan in a single direction"""
 
     points: Geometries
@@ -300,7 +301,7 @@ one may still reference a public dataset, but this is not required.
 ###############################################################################
 
 
-class Conformation(BaseModel):
+class Conformation(RmmdBaseModel):
     """ "The spatial arrangement of the atoms affording distinction between
     stereoisomers which can be interconverted by rotations about formally
     single bonds." - IUPAC Goldbook, https://doi.org/10.1351/goldbook.C01258
@@ -351,7 +352,7 @@ graph
 """
 
 
-class PesPath(BaseModel):
+class PesPath(RmmdBaseModel):
     """An Edge/"ReactionStep" in a detailed PES network"""
 
     stages: tuple[Well, Well]

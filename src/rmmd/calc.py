@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from typing import Annotated, Generic, Literal, TypeVar
 from annotated_types import MinLen
-from pydantic import BaseModel
-from rmmd.keys import CalcIndex
-from rmmd.metadata import CitationKeyOrDirectReference, HttpUrlReference
+
+from ._base import RmmdBaseModel
+from .keys import CalcIndex
+from .metadata import CitationKeyOrDirectReference, HttpUrlReference
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
 
 
-class Software(BaseModel):
+class Software(RmmdBaseModel):
     """computer software used to perform a calculation"""
 
     name: Annotated[str, MinLen(1)]
@@ -21,7 +22,7 @@ class Software(BaseModel):
     """URL to the software repository, e.g., GitHub or GitLab"""
 
 
-class CalculationBase(BaseModel, Generic[InputT, OutputT]):
+class CalculationBase(RmmdBaseModel, Generic[InputT, OutputT]):
     type: str
     """type of the calculation"""
 

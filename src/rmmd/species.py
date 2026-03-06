@@ -2,24 +2,18 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Annotated, Literal, Self, TypeAlias
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
-from rdkit.Chem import (
-    MolBlockToInchi,
-    MolFromInchi,
-    MolFromSmiles,
-    MolToMolBlock,
-    MolToSmiles,
-)
+from pydantic import Field
 
+from ._base import RmmdBaseModel
+from .identifiers import StringIdentifier
 from .keys import ConformationIndex, EntityKey, SpeciesName, ThermoIndex, TransportIndex
 from .kinetics import RateCoefficient
 from .pes import ElectronicState, PesPath
 
 
-class Species(BaseModel):
+class Species(RmmdBaseModel):
     """A chemical species."""
 
     name: str | None = None
@@ -37,7 +31,7 @@ class Species(BaseModel):
     """transport properties for this species"""
 
 
-class MolecularEntity(BaseModel):
+class MolecularEntity(RmmdBaseModel):
     """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
     Here, flexible conformational spatial rearrangements are by default not distinguished, i.e., a molecular entity can have multiple conformers.
@@ -97,7 +91,7 @@ class MolecularEntity(BaseModel):
     # TODO better canoncial representation of each layer
 
 
-class TransportProperty(BaseModel):
+class TransportProperty(RmmdBaseModel):
     """Transport property for species"""
 
     shape: Literal["atom", "linear", "nonlinear"]
@@ -122,7 +116,7 @@ class TransportProperty(BaseModel):
     """dispersion coefficient normalized by e^2 in angstroms^5"""
 
 
-class SpeciesRole(BaseModel):
+class SpeciesRole(RmmdBaseModel):
     """Node in a reaction network"""
 
     # can be extended, if necessary, subclasses for some roles can
@@ -131,7 +125,7 @@ class SpeciesRole(BaseModel):
     species: SpeciesName
 
 
-class Reaction(BaseModel):
+class Reaction(RmmdBaseModel):
     """A chemical reaction"""
 
     species: list[SpeciesRole]
@@ -157,149 +151,14 @@ Constitution = Annotated[
 
 
 # TODO use existing standard (e.g. "non-standard" InChI with fixed-H layer) or define canonical numbering of atoms, ...?
-class MolecularConnectivity(BaseModel):
+class MolecularConnectivity(RmmdBaseModel):
     """Connectivity between atoms"""
 
     # TODO graph data structure + canonical form for easy comparison
     # TODO special values for formed and broken bonds (for transition states, etc.)
 
 
-class Stereochemistry(BaseModel):
+class Stereochemistry(RmmdBaseModel):
     """Definition of the Stereochemistry"""
 
     # TODO define via stereocenters
-
-
-class _StringIdentifierBase(BaseModel, ABC):
-    """Base class for string identifiers with a type field."""
-
-    type: str
-    value: str
-
-
-class _ValidationStrategyMixin(ABC):
-    """Base class for string identifiers with a type field."""
-
-    type: str
-    value: str
-    validation_strategy: Literal["quick", "full", "recalculate"] = "quick"
-
-    @model_validator(mode="after")
-    def validate_string_identifier(self) -> Self:
-        """Validate string identifier value."""
-        if self.validation_strategy == "quick":
-            self.quick_validate()
-        elif self.validation_strategy == "recalculate":
-            self.value = self.recalculate()
-        elif self.validation_strategy == "full":
-            self.full_validate()
-        return self
-
-    def quick_validate(self) -> None:
-        """Validate string identifier value (quick)."""
-        pass
-
-    @abstractmethod
-    def recalculate(self) -> str:
-        """Recalculate string identifier value (no validation)."""
-        msg = f"Recalculation is not implemented for type {self.type}"
-        raise NotImplementedError(msg)
-
-    def full_validate(self) -> None:
-        """Validate string identifier value (full)."""
-        try:
-            recalculated_value = self.recalculate()
-        except NotImplementedError:
-            msg = f"Full validation is not implemented for type {self.type}"
-            raise NotImplementedError(msg)
-
-        if not recalculated_value == self.value:
-            msg = (
-                f"Recalculated {self.type} does not match:\n"
-                f"original:     {self.value}\n"
-                f"recalculated: {recalculated_value}\n"
-            )
-            raise ValueError(msg)
-
-
-class _StandardInChI(_StringIdentifierBase, _ValidationStrategyMixin):
-    """Standard IUPAC International Chemical Identifier"""
-
-    type: Literal["InChI"] = "InChI"
-
-    def quick_validate(self) -> None:
-        """Validate string identifier value (quick)."""
-        if not self.value.startswith("InChI=1S/"):
-            msg = f"{self.type} is missing expected prefix 'InChI=1S/': {self.value}"
-            raise ValueError(msg)
-
-    def recalculate(self) -> str:
-        """Recalculate string identifier value (no validation)."""
-        mol = MolFromInchi(self.value)
-        mol_block = MolToMolBlock(mol)
-        return MolBlockToInchi(mol_block)  # type: ignore
-
-
-class _FixedHInChI(_StringIdentifierBase, _ValidationStrategyMixin):
-    """IUPAC International Chemical Identifier generated with the fixed-H layer."""
-
-    type: Literal["InChI-fixedH"] = "InChI-fixedH"
-
-    def quick_validate(self) -> None:
-        """Validate string identifier value (quick)."""
-        if not self.value.startswith("InChI=1/"):
-            msg = f"{self.type} is missing expected prefix 'InChI=1/': {self.value}"
-            raise ValueError(msg)
-
-    def recalculate(self) -> str:
-        """Recalculate string identifier value (no validation)."""
-        mol = MolFromInchi(self.value)
-        mol_block = MolToMolBlock(mol)
-        return MolBlockToInchi(mol_block, options="-FixedH")  # type: ignore
-
-
-class _StandardInChIKey(_StringIdentifierBase):
-    """Standard IUPAC International Chemical Identifier Key"""
-
-    type: Literal["InChIKey"]
-    value: Annotated[
-        str,
-        Field(
-            pattern="^[A-Z]{14}-[A-Z]{8}SA-[A-Z]$",
-        ),
-    ]
-
-
-class _SMILES(_StringIdentifierBase, _ValidationStrategyMixin):
-    """Simplified Molecular Input Line Entry System"""
-
-    type: Literal["SMILES"] = "SMILES"
-
-    def recalculate(self) -> str:
-        """Recalculate string identifier value (no validation)."""
-        mol = MolFromSmiles(self.value)
-        return MolToSmiles(mol)
-
-
-class _CustomStringIdentifier(_StringIdentifierBase):
-    """Custom string identifier with a type field."""
-
-    type: Literal["custom"]
-    label: str
-
-
-StringIdentifier: TypeAlias = Annotated[
-    _StandardInChI
-    | _SMILES
-    | _CustomStringIdentifier
-    | _FixedHInChI
-    | _StandardInChIKey,
-    Field(discriminator="type"),
-]
-"""string identifier for a molecular entity"""
-
-
-class _StringIdentifierTest(BaseModel):
-    """class for testing the Geometry and Geometries classes"""
-
-    string_identifier_list: list[StringIdentifier]
