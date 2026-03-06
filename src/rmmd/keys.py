@@ -66,6 +66,11 @@ class _ListIndex(RmmdFrozenBaseModel, frozen=True):
     def convert_from_str(cls, data: dict | _ListIndex | str) -> dict | _ListIndex:
         """for better readbility and clarity, indices are represented as strings in the format "<schema_field>:<integer>", e.g., "calculations:0". This validator converts such strings to the internal representation."""
         if isinstance(data, str):
+            if ":" not in data:
+                raise ValueError(
+                    f"Invalid {cls.model_fields['schema_field'].default} index: expected string in the format '<schema_field>:<integer>', got '{data}'"
+                )
+
             t, v = data.split(":", maxsplit=1)
             schema_field = cls.model_fields["schema_field"].default
             if t != schema_field:
