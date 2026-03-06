@@ -25,22 +25,22 @@ class ElectronicState(BaseModel, frozen=True):
 
     charge: int
     """total charge"""
-    spin: NonNegativeInt | Literal["unkown"]
+    spin: NonNegativeInt | Literal["unknown"]
     """2S - two times the electron spin quantum number"""
 
     description: str | None = None
     """human-readable description of the electronic state, e.g. "ground state"
 
-    This field is required, if spin is unkown. This field can also be used to
+    This field is required, if spin is unknown. This field can also be used to
     add additional information about the electronic state, e.g., the term
     symbol
     """
 
     @model_validator(mode="after")
-    def require_description_for_unkown_spin(self):
-        """require a description if the spin is unkown"""
-        if self.spin == "unkown" and not self.description:
-            raise ValueError("Description is required if the spin is unkown")
+    def require_description_for_unknown_spin(self):
+        """require a description if the spin is unknown"""
+        if self.spin == "unknown" and not self.description:
+            raise ValueError("Description is required if the spin is unknown")
         return self
 
 
