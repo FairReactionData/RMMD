@@ -51,42 +51,36 @@ conformations:
       electronic_state: {charge: 0, spin: 0}
     calculation: [1, 3]   # ids in the calculation list
     description: "gauche conformer of butane"
-    thermo:
-      type: RRHO
-      frequencies: 1  # from calculation 0
-      spe: 3  # from calculation 2
-      frequency_scaling: 0.99
-      rot_symmetry_nr: 1
 calculations:
-  - type: opt&freq
+  - type: qm-optimization+frequency
     level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_opt_trans.log"]
-  - type: opt&freq
+  - type: qm-optimization+frequency
     level_of_theory: "B3LYP-D3BJ/def2-TZVP"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_opt_gauche.log"]
-  - type: spe
+  - type: qm-energy
     level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_spe_trans.log"]
-  - type: spe
+  - type: qm-energy
     level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
     electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_spe_gauche.log"]
-  - type: "thermo from QM"
+  - type: "thermo-from QM"
     software:
       name: GoodVibes
       version: "3.2"

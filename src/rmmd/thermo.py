@@ -296,4 +296,4 @@ class ConformationThermoData(BaseModel):
 class ThermoQmCalc(CalculationBase[QmThermoCalcInput, ThermoIndex]):
     """calculation of thermochemical properties derived from quantum chemistry"""
 
-    type: Literal["thermo from QM"] = "thermo from QM"
+    type: Literal["thermo-from QM"] = "thermo-from QM"
