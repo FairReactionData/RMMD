@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 from annotated_types import MinLen
-from pydantic import BaseModel, Field, model_validator
-from .pes import ConformationalEnsemble, Software
-from .keys import CitationKey, CalcIndex, SpeciesName, ThermoIndex
+from pydantic import BaseModel, model_validator
+from .calc import CalculationBase
+from .keys import CitationKey, CalcIndex, ConformationIndex, SpeciesName, ThermoIndex
 
 
 class _ThermoPropertyBase(BaseModel):
@@ -211,51 +211,89 @@ TabularThermo = ThermoTable | ThermoTableNoRef
 ###############################################################################
 
 
-class Rrho(_ThermoPropertyBase):
-    """Rigid-Rotor harmonic oscillator"""
+class QmThermoCalcInput(BaseModel):
+    """data for thermochemical calculations derived from quantum
+    chemistry calculations
+    """
 
-    type: Literal["RRHO"] = "RRHO"
+    conformations: dict[ConformationIndex, ConformationThermoData]
+    """data for conformations that are explicitly modeled, e.g., via RRHO or
+    by using their electronic energy for computing the conformer mixture
+    composition.
+    The degeneracy of enantiomeric conformations can be provided as an integer
+    in the second element of the tuple.
+    """
+    internal_rotors: list[_NDRotorData] | None = None
+    """data for internal rotors"""
 
-    frequencies: CalcIndex  # link to QcCalculation?
-    frequency_scaling: float  # TODO value + type + source
-    quasi_harmonic_approx: str | None = None
-    spe: CalcIndex
-    rot_symmetry_nr: int  # TODO source + value
+
+class _SingleRotorData(BaseModel):
+    """thermochemical data for rotors"""
+
+    electronic_energies: list[CalcIndex]
+
+    moving_group: list[int]
+    """(zero-based) indices of the atoms belonging to the moving group/top
+    of the rotor
+    """
+    axis: tuple[int, int]
+    """(zero-based) indices of the two atoms defining the axis of rotation
+    """
+    sigma: int
+    """symmetry number for the rotor"""
+
+    # TODO pivot points?
+
+
+class _NDRotorData(BaseModel):
+    """thermochemical data for N-dimensional rotors
+
+    n may be 1 for a hindered rotor
+    """
+
+    rotos: Annotated[list[_SingleRotorData], MinLen(1)]
+
+
+class ConformationThermoData(BaseModel):
+    """Quantum chemistry-derived thermochemical properties for a single
+    conformation
+    """
+
+    degeneracy: int = 1
+    """degeneracy of the conformation, if an enantiomeric conformation"""
+
+    ### data from QC calculations ###
+    electronic_energy: CalcIndex
+    """electronic energy used for the thermochemistry calculations and
+    a reference to the calculation that yielded it
+    """
+
+    # TODO how should processing of frequencies be handled? excluding imaginary frequencies for TS, quasi harmonic treatment, frequency scaling, excluding external DOF, ...?
+    frequencies: CalcIndex | None = None
+    """frequencies used for thermochemical calculations in cm^-1 and
+    a reference to the calculation that yielded it
+
+    Here, the eigenvalues belonging to external degrees of freedom, the
+    imaginary frequency for a TS, ... are excluded
+    """
+    geometry: CalcIndex | None = None
+    """geometry used for thermochemical calculations and a reference to the
+    calculation that yielded it
+    """
+
+    ### data not (necessarily) from QC software output ###
+    frequency_scaling: float | None = None
+    """factor used to scale frequencies"""
+    rot_symmetry_nr: int | None = None
     """rotational symmetry number"""
-    software: Software | None = None
-    """software used to perform the calculation"""
+    quasi_harmonic_approx: str | None = None
+    """short string describing the quasi-harmonic approximation, e.g.,
+    "Truhlar", "Grimme", ...
+    More details should be provided in the paper referenced via source
+    """
 
 
-# TODO how to deal with the different approaches of getting thermochemistry from QM (e.g. even for RRHO you can apply different quasi-harmonic approximations to the parititon function or just to the entropy, there are different ways to apply frequency scaling, ... - not to mention 1DHR)
-#   maybe collect different ways of how thermochemistry is obtained from collaboration then think about schema!
+class ThermoQmCalc(CalculationBase[QmThermoCalcInput, ThermoIndex]):
+    """calculation of thermochemical properties derived from quantum chemistry"""
 
-
-class BoltzmannWeightedEnsemble(_ThermoPropertyBase):
-    """ensemble of multiple stationary points modelled as RRHO each"""
-
-    type: Literal["Boltzmann weighted ensemble"] = "Boltzmann weighted ensemble"
-    members: ConformationalEnsemble
-    """members of the ensemble, each with its degeneracy"""
-    energy_expression: Literal["G", "H", "electronic energy", "ZPE"]
-    """energy expression used in the Boltzmann coefficient to calculate the weigths of ensemble members."""
-
-
-###############################################################################
-# general
-###############################################################################
-
-ReactionThermo = Annotated[
-    ThermoTableNoRef,
-    Field(discriminator="type"),
-]
-"""Thermochemical data for a specific reaction.
-"""
-
-SpeciesThermo = Annotated[
-    Nasa7 | Shomate | ThermoTable | BoltzmannWeightedEnsemble | ThermoTableNoRef,
-    Field(discriminator="type"),
-]
-"""Thermochemical data for a specific species. Use this in type hints
-
-All thermoproperties need to have a type field.
-"""
+    type: Literal["thermo-from QM"] = "thermo-from QM"
