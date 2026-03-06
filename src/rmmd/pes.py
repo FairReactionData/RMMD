@@ -17,7 +17,7 @@ from pydantic import (
 )
 from rmmd.calc import CalculationBase
 from .elements import ElementSymbol
-from .keys import ConformationIdx, EntityKey, CalcIdx
+from .keys import ConformationIndex, EntityKey, CalcIndex
 
 
 class ElectronicState(BaseModel, frozen=True):
@@ -125,6 +125,22 @@ class Geometries(BaseModel):
         return self
 
 
+_DistanceDef: TypeAlias = tuple[NonNegativeInt, NonNegativeInt]
+"""definition of a distance internal coordinate, i.e., a bond length, by the indices of
+the two atoms involved
+"""
+_AngleDef: TypeAlias = tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]
+"""definition of an angle internal coordinate, i.e., a bond angle, by the indices of
+the three atoms involved
+"""
+_DihedralDef: TypeAlias = tuple[
+    NonNegativeInt, NonNegativeInt, NonNegativeInt, NonNegativeInt
+]
+"""definition of a dihedral angle internal coordinate by the indices of the four atoms
+involved
+"""
+
+
 class _QmInput(BaseModel):
     """input data for a quantum chemistry calculation"""
 
@@ -134,6 +150,15 @@ class _QmInput(BaseModel):
     """electronic state for which the calculation was performed"""
     geometry: Geometry | None = None
     """geometry of the molecule for which the calculation was performed"""
+
+
+class _QmOptInput(_QmInput):
+    """input data for a geometry optimization calculation"""
+
+    constraints: list[_DistanceDef | _AngleDef | _DihedralDef] = Field(
+        default_factory=list
+    )
+    """constraints on the internal coordinates during the optimization"""
 
 
 class _QmOptData(BaseModel):
@@ -147,21 +172,29 @@ class _QmOptData(BaseModel):
     """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
 
 
-class QmOptimization(CalculationBase[_QmInput, _QmOptData]):
+class QmOptimization(CalculationBase[_QmOptInput, _QmOptData]):
     """geometry optimization"""
 
-    type: Literal["opt", "ts"] = "opt"
+    type: Literal["qm-optimization", "qm-ts"] = "qm-optimization"
     """type of the calculation"""
 
 
-class _QmDihedralScanInput(_QmInput):
-    """input data for a dihedral angle scan"""
+class _QmScanInput(_QmInput):
+    """input data for a PES scan"""
 
-    constraint: tuple[int, int, int, int]
-    """definition of the dihedral that should be scanned"""
+    scan_coordinates: list[_DistanceDef | _AngleDef | _DihedralDef]
+    """definition of the internal coordinates that are scanned"""
+    scan_type: Literal["frozen", "relaxed"]
+    """whether all other atoms (except those involved in the scan coordinates and the
+    constraints) are optimized at each step of the scan ("relaxed") or not ("frozen")
+    """
+    constraints: list[_DistanceDef | _AngleDef | _DihedralDef] = Field(
+        default_factory=list
+    )
+    """constraints on the internal coordinates during a relaxed scan"""
 
 
-class _QmDihedralScanData(BaseModel):
+class _QmScanData(BaseModel):
     """data from a dihedral angle scan"""
 
     geometries: Geometries
@@ -172,10 +205,10 @@ class _QmDihedralScanData(BaseModel):
     # TODO add steps, boundary, etc.
 
 
-class QmDihedralScan(CalculationBase[_QmDihedralScanInput, _QmDihedralScanData]):
+class QmScan(CalculationBase[_QmScanInput, _QmScanData]):
     """dihedral angle scan"""
 
-    type: Literal["dihedral_scan"] = "dihedral_scan"
+    type: Literal["qm-scan"] = "qm-scan"
     """type of the calculation"""
 
 
@@ -197,7 +230,7 @@ class _QmFreqData(BaseModel):
 class QmFreqCalc(CalculationBase[_QmInput, _QmFreqData]):
     """frequency calculation"""
 
-    type: Literal["freq"] = "freq"
+    type: Literal["qm-frequency"] = "qm-frequency"
 
 
 class _QmOptFreqData(_QmOptData, _QmFreqData):
@@ -207,20 +240,22 @@ class _QmOptFreqData(_QmOptData, _QmFreqData):
 class QmOptFreqCalc(CalculationBase[_QmInput, _QmOptFreqData]):
     """geometry optimization with frequencies"""
 
-    type: Literal["opt&freq", "ts&freq"] = "opt&freq"
+    type: Literal["qm-optimization+frequency", "qm-ts+frequency"] = (
+        "qm-optimization+frequency"
+    )
 
 
-class _QmSpeData(BaseModel):
+class _QmEnergyData(BaseModel):
     """Data from a single-point energy calculation"""
 
     total_electronic_energy: float
     """total electronic energy in Hartree"""
 
 
-class QmSpeCalc(CalculationBase[_QmInput, _QmSpeData]):
+class QmEnergyCalc(CalculationBase[_QmInput, _QmEnergyData]):
     """single-point energy calculation"""
 
-    type: Literal["spe"] = "spe"
+    type: Literal["qm-energy"] = "qm-energy"
 
 
 class _QmIrcScanData(BaseModel):
@@ -242,16 +277,11 @@ class _QmIrcScanData(BaseModel):
 class QmIrcScan(CalculationBase[_QmInput, _QmIrcScanData]):
     """intrinsic reaction coordinate scan"""
 
-    type: Literal["irc"] = "irc"
+    type: Literal["qm-irc"] = "qm-irc"
 
 
 QmCalculation = Annotated[
-    QmOptimization
-    | QmDihedralScan
-    | QmFreqCalc
-    | QmOptFreqCalc
-    | QmSpeCalc
-    | QmIrcScan,
+    QmOptimization | QmScan | QmFreqCalc | QmOptFreqCalc | QmEnergyCalc | QmIrcScan,
     Field(discriminator="type"),
 ]
 """There are two ways to supply quantum chemistry data, either directly by
@@ -285,12 +315,12 @@ class Conformation(BaseModel):
     description: str | None = None
     """human-readable description of the point"""
 
-    calculations: list[CalcIdx] = Field(default_factory=list)
+    calculations: list[CalcIndex] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
 
 
 ConformationalEnsemble = Annotated[
-    list[tuple[ConformationIdx, PositiveInt]], Field(min_length=1)
+    list[tuple[ConformationIndex, PositiveInt]], Field(min_length=1)
 ]
 """ensemble of conformations
 
@@ -304,7 +334,7 @@ trans conformer and 1 and 2 are points representing the two mirror images of
 the gauche conformer.
 """
 
-PointSequence = Annotated[list[ConformationIdx], Field(min_length=1)]
+PointSequence = Annotated[list[ConformationIndex], Field(min_length=1)]
 """path connecting stationary points on a potential energy surface, e.g., a
 IRC path, frozen scane, ...
 """

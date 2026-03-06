@@ -8,13 +8,7 @@ from annotated_types import MaxLen, MinLen
 from pydantic import BaseModel, model_validator
 
 from .calc import CalculationBase
-from .keys import (
-    CalcIdx,
-    CitationKey,
-    ConformationIdx,
-    SpeciesName,
-    ThermoIdx,
-)
+from .keys import CitationKey, CalcIndex, ConformationIndex, SpeciesName, ThermoIndex
 
 
 class _ThermoPropertyBase(BaseModel):
@@ -102,7 +96,7 @@ class _HasReferenceStateMixin(BaseModel):
 class _FittedToMixin(BaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
-    fitted_to: list[CitationKey] | ThermoIdx | CalcIdx | None = None
+    fitted_to: list[CitationKey] | ThermoIndex | CalcIndex | None = None
     """data/model that the coefficients of this model were fitted to.
 
     If the model was fitted to data form this dataset, an integer (starting at
@@ -278,7 +272,7 @@ class QmThermoCalcInput(BaseModel):
     chemistry calculations
     """
 
-    conformations: dict[ConformationIdx, ConformationThermoData]
+    conformations: dict[ConformationIndex, ConformationThermoData]
     """data for conformations that are explicitly modeled, e.g., via RRHO or
     by using their electronic energy for computing the conformer mixture
     composition.
@@ -292,7 +286,7 @@ class QmThermoCalcInput(BaseModel):
 class _SingleRotorData(BaseModel):
     """thermochemical data for rotors"""
 
-    electronic_energies: list[CalcIdx]
+    electronic_energies: list[CalcIndex]
 
     moving_group: list[int]
     """(zero-based) indices of the atoms belonging to the moving group/top
@@ -325,20 +319,20 @@ class ConformationThermoData(BaseModel):
     """degeneracy of the conformation, if an enantiomeric conformation"""
 
     ### data from QC calculations ###
-    electronic_energy: CalcIdx
+    electronic_energy: CalcIndex
     """electronic energy used for the thermochemistry calculations and
     a reference to the calculation that yielded it
     """
 
     # TODO how should processing of frequencies be handled? excluding imaginary frequencies for TS, quasi harmonic treatment, frequency scaling, excluding external DOF, ...?
-    frequencies: CalcIdx | None = None
+    frequencies: CalcIndex | None = None
     """frequencies used for thermochemical calculations in cm^-1 and
     a reference to the calculation that yielded it
 
     Here, the eigenvalues belonging to external degrees of freedom, the
     imaginary frequency for a TS, ... are excluded
     """
-    geometry: CalcIdx | None = None
+    geometry: CalcIndex | None = None
     """geometry used for thermochemical calculations and a reference to the
     calculation that yielded it
     """
@@ -355,7 +349,7 @@ class ConformationThermoData(BaseModel):
     """
 
 
-class ThermoQmCalc(CalculationBase[QmThermoCalcInput, ThermoIdx]):
+class ThermoQmCalc(CalculationBase[QmThermoCalcInput, ThermoIndex]):
     """calculation of thermochemical properties derived from quantum chemistry"""
 
-    type: Literal["thermo from QM"] = "thermo from QM"
+    type: Literal["thermo-from QM"] = "thermo-from QM"
