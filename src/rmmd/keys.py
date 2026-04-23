@@ -123,3 +123,9 @@ class TransportIndex(_ListIndex, frozen=True):
     """index referencing a transport property in the root schema"""
 
     schema_field: Literal["transport"] = "transport"
+
+
+class ReactionIndex(_ListIndex, frozen=True):
+    """index referencing a reaction in the root schema"""
+
+    schema_field: Literal["reactions"] = "reactions"

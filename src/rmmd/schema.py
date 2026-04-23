@@ -8,7 +8,7 @@ from .calc import NestedCalculation
 from .keys import CitationKey, EntityKey, SpeciesName
 from .kinetics import RateCoefficient
 from .metadata import Citation, CitationKeyOrDirectReference, Reference
-from .pes import Conformation, QmCalculation
+from .pes import Conformation, ConformationRelation, QmCalculation
 from .species import MolecularEntity, Reaction, Species, TransportProperty
 from .thermo import (
     STATE_1_BAR_298_K,
@@ -54,6 +54,9 @@ class Schema(RmmdBaseModel, extra="forbid"):
     ### electronic structure view ###
     conformations: list[Conformation] = Field(default_factory=list)
     """conformations in the dataset"""
+    conformation_relations: list[ConformationRelation] = Field(default_factory=list)
+    """relations between conformations, e.g., which conformations are considered to be
+    the same, which conformations are connected by an IRC path, ..."""
     calculations: list[_CalculationItem] = Field(default_factory=list)
     """quantum chemistry calculations"""
 

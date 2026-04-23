@@ -8,17 +8,18 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, TypeAlias
 
+from annotated_types import MinLen
 from pydantic import (
+    AfterValidator,
     Field,
     NonNegativeInt,
-    PositiveInt,
     model_validator,
 )
 
-from ._base import RmmdBaseModel
+from ._base import RmmdBaseModel, RmmdFrozenBaseModel
 from .calc import CalculationBase
 from .elements import ElementSymbol
-from .keys import CalcIndex, ConformationIndex, EntityKey
+from .keys import CalcIndex, ConformationIndex
 
 
 class ElectronicState(RmmdBaseModel, frozen=True):
@@ -310,7 +311,10 @@ class Conformation(RmmdBaseModel):
     exact stationary point on the potential energy surface (PES) of its
     molecular  entity (using the Born-Oppenheimer approximation). These spatial
     arragements are approximated by minimum or saddle point optimizations with
-    a particular quantum chemistry method.
+    a particular quantum chemistry method. They do not correspond to a single concrete
+    set of internal coordinates, but rather a label for a stationary point. Concrete
+    coordinates can be added as the output of quantum chemistry optimization
+    calculations.
     """
 
     description: str | None = None
@@ -320,42 +324,67 @@ class Conformation(RmmdBaseModel):
     """quantum chemistry calculations for this point"""
 
 
-ConformationalEnsemble = Annotated[
-    list[tuple[ConformationIndex, PositiveInt]], Field(min_length=1)
+ConformationIds: TypeAlias = Annotated[
+    tuple[ConformationIndex, ...], AfterValidator(sorted), MinLen(1)
 ]
-"""ensemble of conformations
+"""list of multiple conformations
 
-Used when multiple points interconvert fast w.r.t. the timescale of interest,
-e.g.; conformers, ...
-Each point has a degeneracy which can be provided explicitly as number or
-implicitly by introducing additional members each with degeneracy one.
-For example, the conformer ensemble of butane could be represented as [(0, 1),
-(1, 1), (2, 1)] or [(0, 1), (1, 2)]. Where 0 is the point representing the
-trans conformer and 1 and 2 are points representing the two mirror images of
-the gauche conformer.
-"""
-
-PointSequence = Annotated[list[ConformationIndex], Field(min_length=1)]
-"""path connecting stationary points on a potential energy surface, e.g., a
-IRC path, frozen scane, ...
-"""
-
-Well: TypeAlias = set[EntityKey]
-"""n-molecular well - set of molecular entities which are minima on a PES
-"""
-
-TransitionState: TypeAlias = EntityKey
-"""a transition state
-
-represented by a molecular entity whose connectivity is a condensed reaction
-graph
+Conformations may appear multiple times in the list, if their stoichiometric coefficient
+is greater than one. When determining if two lists are equal, their order does not
+matter, therefore, the list is automatically sorted to simplify comparison in Python
+code.
 """
 
 
-class PesPath(RmmdBaseModel):
-    """An Edge/"ReactionStep" in a detailed PES network"""
+class IRCRelation(RmmdFrozenBaseModel, frozen=True):
+    stationary_point: ConformationIndex
+    """stationary point, col, or "transition state" of the IRC path"""
 
-    stages: tuple[Well, Well]
-    """product and reactant wells"""
-    transition_state: TransitionState
-    """transition state"""
+    irc_endpoints: tuple[ConformationIds, ConformationIds]
+    """IRC endpoints, i.e., the conformations at the end of the IRC path in both directions. If there is a pre-reactive complex, it is recommended, to include that as a separate conformation, use it as endpoint, and link it to the optimized fragment of the reactant/product using the OptimizedFragmentRelation.
+    """
+
+
+class OptimizedFragmentRelation(RmmdFrozenBaseModel, frozen=True):
+    """Relation linking a conformation to an optimized fragment of it.
+
+    Can be applied to pre-reactive complexes to link the complex with the optimized
+    reactant and product fragments. Often, the association of the fragments is not
+    relevant to the kinetics and the reaction is typically modeled by just considering
+    the fragments. Using this relation, one can still include the data belonging to the
+    complex in the dataset.
+    """
+
+    parent: ConformationIndex
+    """index of the parent conformation, e.g., the complex"""
+    fragments: ConformationIds
+    """index of the optimized fragment conformation"""
+
+
+class EqualityRelation(RmmdFrozenBaseModel, frozen=True):
+    """Relation linking conformations that are considered to be the same conformation.
+
+    While multiple calculations such as different geometry optimizations at different
+    levels of theory can be linked to a single conformation, not doing so can be useful.
+    Typically, researchers will first have a set of concrete optimized coordinates and
+    then determine which of those can be considered the same conformation, e.g., by
+    comparing their energies and geometries. First, you could assign each optimized
+    geometry to a separate conformation and potentially link a single point energy or
+    frequency calculation to these geoemtries through teh conformation. Then, you can
+    compare the conformations and use this relation to link conformations which should
+    be the same.
+    Additionaly, there are multiple ways to do this comparison and different thresholds,
+    can be applied, e.g., for the RMSD or rotational constant. This would lead to
+    different assignments of the optimized geometries to conformations. Assigning each
+    optimized geometry to a separate conformation first and declaring them to be equal
+    using this relation allows one to remain flexible.
+    """
+
+    equal: set[ConformationIndex]
+    """indeces of conformations that are considered to be the same"""
+
+
+ConformationRelation: TypeAlias = (
+    IRCRelation | OptimizedFragmentRelation | EqualityRelation
+)
+"""Relations between conformations, e.g., which conformations are considered to be"""

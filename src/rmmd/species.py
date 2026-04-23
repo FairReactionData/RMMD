@@ -2,21 +2,29 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeAlias
 
+from annotated_types import Gt, Le, MinLen
 from pydantic import Field
 
 from ._base import RmmdBaseModel
 from .identifiers import StringIdentifier
-from .keys import ConformationIndex, EntityKey, SpeciesName, ThermoIndex, TransportIndex
+from .keys import (
+    ConformationIndex,
+    EntityKey,
+    ReactionIndex,
+    SpeciesName,
+    ThermoIndex,
+    TransportIndex,
+)
 from .kinetics import RateCoefficient
-from .pes import ElectronicState, PesPath
+from .pes import ElectronicState
 
 
 class Species(RmmdBaseModel):
     """A chemical species."""
 
-    name: str | None = None
+    names: list[str] = Field(default_factory=list)
     """human-readable name of the species. This is not a unique identifier,
     but can be used to identify the species in a human-readable way.
     """
@@ -58,6 +66,8 @@ class MolecularEntity(RmmdBaseModel):
     strucutre is flexible, this list is not guaranteed to be exhaustive as not
     all conformations may have been identified.
     """
+    description: str | None = None
+    """human-readable description of what this molecular entity represents"""
 
     identifiers: list[StringIdentifier] = Field(
         default_factory=list,
@@ -116,24 +126,57 @@ class TransportProperty(RmmdBaseModel):
     """dispersion coefficient normalized by e^2 in angstroms^5"""
 
 
-class SpeciesRole(RmmdBaseModel):
-    """Node in a reaction network"""
-
-    # can be extended, if necessary, subclasses for some roles can
-    # add additional fields
-    role: Literal["reactant", "product", "solvent", "catalyst"]
-    species: SpeciesName
+Mixture: TypeAlias = list[tuple[SpeciesName, Annotated[float, Gt(0.0), Le(1.0)]]]
+"""a mixture of species with their respective mole fractions."""
 
 
 class Reaction(RmmdBaseModel):
-    """A chemical reaction"""
+    """A chemical reaction.
 
-    species: list[SpeciesRole]
+    High-level description/identification of a reaction (with a direction).
+    """
+
+    reactants: Annotated[list[SpeciesName], MinLen(1)]
+    products: Annotated[list[SpeciesName], MinLen(1)]
+    solvent: SpeciesName | Mixture | None = None
+    catalyst: SpeciesName | None = None
+
+    transition_state: SpeciesName | None = None
+    """for an elementary reaction, the transition state can be provided.
+    """
+    steps: list[ReactionIndex] = Field(default_factory=list)
+    """consecutive reaction steps
+
+    allows modelling step-wise reactions by defining their elementary steps as separate
+    reactions and linking them vis this field.
+    """
+    parallel_steps: list[ReactionIndex] = Field(default_factory=list)
+    """parallel reaction steps
+
+    allows "lumping" of multiple parallel reactions with the same reactants and products
+    """
+
     thermo: list[ThermoIndex] = Field(default_factory=list)
     """thermochemical properties for this reaction"""
     rate_constants: list[RateCoefficient] = Field(default_factory=list)
     """rate coefficients for this reaction"""
-    pes_paths: list[PesPath] = Field(default_factory=list)
+
+    def __str__(self) -> str:
+        """String representation of the reaction."""
+        reactants_str = " + ".join(self.reactants)
+        products_str = " + ".join(self.products)
+        return f"{reactants_str} -> {products_str}"
+
+    def reverse(self) -> Reaction:
+        """Return the reverse reaction.
+
+        The reverse reaction does not include thermo, rate constants and steps."""
+        return Reaction(
+            reactants=self.products,
+            products=self.reactants,
+            solvent=self.solvent,
+            catalyst=self.catalyst,
+        )
 
 
 ##############################################################################
