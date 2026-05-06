@@ -4,7 +4,7 @@ schema_version: 0.1.0b0
 license: MIT
 species:
   C4H10:
-    name: "Butane"
+    names: ["Butane"]
     entities: [IJDNQMDRQITEOD-UHFFFAOYNA-N]
     thermo: [thermo:0, thermo:1, thermo:2]
 entities:
