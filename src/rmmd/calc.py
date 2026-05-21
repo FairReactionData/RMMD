@@ -22,6 +22,13 @@ class Software(RmmdBaseModel):
     """URL to the software repository, e.g., GitHub or GitLab"""
 
 
+class OutputOf(RmmdBaseModel):
+    """helper class to declare that a calculation's output is the input for another"""
+
+    output_of: CalcIndex
+    """index of the calculation that produces the output of this calculation"""
+
+
 class CalculationBase(RmmdBaseModel, Generic[InputT, OutputT]):
     type: str
     """type of the calculation"""
@@ -41,7 +48,7 @@ class CalculationBase(RmmdBaseModel, Generic[InputT, OutputT]):
     specific paper describing the method used for this calculation.
     """
 
-    input: list[CitationKeyOrDirectReference] | InputT | None = None
+    input: list[CitationKeyOrDirectReference | OutputOf] | InputT | None = None
     """input data/parameters for the calculation
 
     Ideally, the data is given as structured RMMD data. Additionally, or if

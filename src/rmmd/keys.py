@@ -94,6 +94,25 @@ class _ListIndex(RmmdFrozenBaseModel, frozen=True):
     def serialize_model(self) -> str:
         return f"{self.schema_field}:{self.value}"
 
+    def __hash__(self) -> int:
+        return hash((self.schema_field, self.value))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, _ListIndex):
+            return NotImplemented
+        return (self.schema_field, self.value) == (other.schema_field, other.value)
+
+    # to allow sorting of indeces, e.g., when comparing lists of indices
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, _ListIndex):
+            return NotImplemented
+        if self.schema_field != other.schema_field:
+            raise ValueError(
+                f"Cannot compare indices of different schema fields: "
+                f"{self.schema_field} and {other.schema_field}"
+            )
+        return self.value < other.value
+
 
 class CalcIndex(_ListIndex, frozen=True):
     """index referencing a calculation in the root schema"""

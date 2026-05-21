@@ -17,7 +17,7 @@ from pydantic import (
 )
 
 from ._base import RmmdBaseModel, RmmdFrozenBaseModel
-from .calc import CalculationBase
+from .calc import CalculationBase, OutputOf
 from .elements import ElementSymbol
 from .keys import CalcIndex, ConformationIndex
 
@@ -161,6 +161,9 @@ class _QmOptInput(_QmInput):
         default_factory=list
     )
     """constraints on the internal coordinates during the optimization"""
+
+    initial_geometry: Geometry | OutputOf | None = None
+    """initial geometry for the optimization."""
 
 
 class _QmOptData(RmmdBaseModel):
@@ -320,11 +323,26 @@ class Conformation(RmmdBaseModel):
     description: str | None = None
     """human-readable description of the point"""
 
+    type: Literal["minimum", "saddle-point"] | None = None
+    """type of the point on the PES"""
+
     calculations: list[CalcIndex] = Field(default_factory=list)
-    """quantum chemistry calculations for this point"""
+    """quantum chemistry calculations for this point, e.g.,  geometry optimizations,
+    frequency calculations, single point energy calculations, ...
+    """
 
 
-ConformationIds: TypeAlias = Annotated[
+# design considerations for the relations between conformations:
+# - as similar/consistent as possible, e.g., each having a list of calculations, but
+#   since conformers have different "roles" in different relations and there are
+#   different numbers of possible conformations per role allowed, we do not add a common
+#   base class for relations.
+# - We do not use the `type: Literal["name of type"]` pattern to not clutter the
+#   yaml file (EquivalenceRelation which has only a single attribute).
+# - The relations are imutable and sorted to allow for easy comparisions in Python code
+
+
+_ConformationIds: TypeAlias = Annotated[
     tuple[ConformationIndex, ...], AfterValidator(sorted), MinLen(1)
 ]
 """list of multiple conformations
@@ -335,33 +353,60 @@ matter, therefore, the list is automatically sorted to simplify comparison in Py
 code.
 """
 
+_ConformationsPair: TypeAlias = Annotated[
+    tuple[_ConformationIds, _ConformationIds], AfterValidator(sorted)
+]
+"""pair of conformations used in multiple relations
 
-class IRCRelation(RmmdFrozenBaseModel, frozen=True):
-    stationary_point: ConformationIndex
-    """stationary point, col, or "transition state" of the IRC path"""
+When determining if two pairs are equal, their order does not matter, therefore, the
+pair is automatically sorted to simplify comparison in Python code.
+"""
 
-    irc_endpoints: tuple[ConformationIds, ConformationIds]
-    """IRC endpoints, i.e., the conformations at the end of the IRC path in both directions. If there is a pre-reactive complex, it is recommended, to include that as a separate conformation, use it as endpoint, and link it to the optimized fragment of the reactant/product using the OptimizedFragmentRelation.
+
+class SaddlePointRelation(RmmdFrozenBaseModel, frozen=True):
+    """relates a saddle point on the PES to the minima that it connects.
+
+    Note, that `minimum1` and `minimum2` should point to minima and not simply IRC endpoints, i.e. the last geometries of an IRC scan. IRC endpoint geometries can be included as output of IRC calculations and linked to this relation.
+    """
+
+    saddle_point: ConformationIndex
+    """saddle point, or "col", of the IRC path"""
+
+    minima: _ConformationsPair
+    """the two minima on the PES connected by the saddle point"""
+
+    calculations: list[CalcIndex] = Field(default_factory=list)
+    """quantum chemistry calculations for this IRC path, e.g., the IRC calculation(s)
+    themselves.
+
+    The transition state optimization should not be listed here but be listed at the conformation representing the transition state. If the normal modes of the transition state were used to confirm this relation, the calculation containing the frequencies can be listed here as well.
     """
 
 
-class OptimizedFragmentRelation(RmmdFrozenBaseModel, frozen=True):
-    """Relation linking a conformation to an optimized fragment of it.
+class NoBarrierRelation(RmmdFrozenBaseModel, frozen=True):
+    """relates multiple minima on a PES that are connected by a path without a barrier.
 
-    Can be applied to pre-reactive complexes to link the complex with the optimized
-    reactant and product fragments. Often, the association of the fragments is not
-    relevant to the kinetics and the reaction is typically modeled by just considering
-    the fragments. Using this relation, one can still include the data belonging to the
-    complex in the dataset.
+    This relation is typically used for two fragments which are minima on their own PES
+    and -- when considered to be infinitely far apart -- on the combined PES to a
+    minimum on the combined PES, e.g.,
+
+    - relate a pre-reactive complexes to the optimized reactant fragments.
+        Often, the association of the fragments is not relevant to the kinetics and the
+        reaction is typically modeled by just considering the fragments. Using this
+        relation, one can still include the data belonging to the complex in the dataset;
+    - relate two radicals which recombine without a barrier to form some product.
     """
 
-    parent: ConformationIndex
-    """index of the parent conformation, e.g., the complex"""
-    fragments: ConformationIds
-    """index of the optimized fragment conformation"""
+    minima: _ConformationsPair
+    """the two minima on the PES connected by a path without a barrier"""
+
+    calculations: list[CalcIndex] = Field(default_factory=list)
+    """quantum chemistry calculations, i.e., the optimization of a structure containing
+    both fragments which minimizes to a complex.
+    """
 
 
-class EqualityRelation(RmmdFrozenBaseModel, frozen=True):
+class EquivalenceRelation(RmmdFrozenBaseModel, frozen=True):
     """Relation linking conformations that are considered to be the same conformation.
 
     While multiple calculations such as different geometry optimizations at different
@@ -380,11 +425,16 @@ class EqualityRelation(RmmdFrozenBaseModel, frozen=True):
     using this relation allows one to remain flexible.
     """
 
-    equal: set[ConformationIndex]
+    equivalent: set[ConformationIndex]
     """indeces of conformations that are considered to be the same"""
+
+    calculations: list[CalcIndex] = Field(default_factory=list)
+    """can be used for linking that were used to determine the equivalence of the
+    conformations, e.g., RMSD computation (not implemented as a calculation type yet)
+    """
 
 
 ConformationRelation: TypeAlias = (
-    IRCRelation | OptimizedFragmentRelation | EqualityRelation
+    SaddlePointRelation | NoBarrierRelation | EquivalenceRelation
 )
 """Relations between conformations, e.g., which conformations are considered to be"""
