@@ -136,6 +136,9 @@ class Reaction(RmmdBaseModel):
     High-level description/identification of a reaction (with a direction).
     """
 
+    description: str | None = None
+    """human-readable description of the reaction"""
+
     reactants: Annotated[list[SpeciesName], MinLen(1)]
     products: Annotated[list[SpeciesName], MinLen(1)]
     solvent: SpeciesName | Mixture | None = None
