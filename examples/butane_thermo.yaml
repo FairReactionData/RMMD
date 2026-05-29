@@ -48,7 +48,7 @@ conformations:
   # saddle points as the PES can also be added (and linked to calculations)
   - description: "trans-gauche transition state of butane"
     calculations: [calculations:4]
-conformation_relations:
+pes_relations:
   - saddle_point: conformations:2
     minima:
       - [conformations:0]
