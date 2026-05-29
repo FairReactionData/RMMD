@@ -1,0 +1,57 @@
+schema_version: 0.1.0b0
+license: MIT
+description: "This example shows how a stepwise reaction on the mechanism level can be
+  defined."
+species:
+  NO2:
+    entities: [JCXJVPUVTGWSNB-UHFFFAOYNA-N]
+  "NO":   # disadvantage of using yaml -> NO without quotes is interpreted as False boolean value
+    entities: [MWUXSHHQAYIFBG-UHFFFAOYNA-N]
+  NO3:
+    entities: [QWOQZJYJXQTVEN-UHFFFAOYSA-N]
+  CO:
+    entities: [UGFAIRIUMAVXCW-UHFFFAOYSA-N]
+  CO2:
+    entities: [CURLTUGMZLYLDI-UHFFFAOYSA-N]
+reactions:
+  - reactants: [NO2, CO]
+    products: ["NO", CO2]
+    # this overall reaction proceeds via two elementary steps defined below
+    steps: [reactions:1, reactions:2]
+  - reactants: [NO2, NO2]
+    products: [NO3, "NO"]
+    description: "Elementary step 1: NO2 + NO2 -> NO3 + NO"
+  - reactants: [NO3, CO]
+    products: [NO2, CO2]
+    description: "Elementary step 2: NO3 + CO -> NO2 + CO2"
+entities:
+  JCXJVPUVTGWSNB-UHFFFAOYNA-N:
+    identifiers:
+      - type: InChI
+        value: InChI=1S/NO2/c2-1-3
+    constitution: {N: 1, O: 2}
+    connectivity: {}
+  MWUXSHHQAYIFBG-UHFFFAOYNA-N:
+    identifiers:
+      - type: InChI
+        value: InChI=1S/NO/c1-2
+    constitution: {N: 1, O: 1}
+    connectivity: {}
+  QWOQZJYJXQTVEN-UHFFFAOYSA-N:
+    identifiers:
+      - type: InChI
+        value: InChI=1S/NO3/c2-1(3)4
+    constitution: {N: 1, O: 3}
+    connectivity: {}
+  UGFAIRIUMAVXCW-UHFFFAOYSA-N:
+    identifiers:
+      - type: InChI
+        value: InChI=1S/CO/c1-2
+    constitution: {C: 1, O: 1}
+    connectivity: {}
+  CURLTUGMZLYLDI-UHFFFAOYSA-N:
+    identifiers:
+      - type: InChI
+        value: InChI=1S/CO2/c2-1-3
+    constitution: {C: 1, O: 2}
+    connectivity: {}
