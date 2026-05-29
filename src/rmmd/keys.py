@@ -32,7 +32,7 @@ SpeciesName = Annotated[
     Field(
         min_length=1,
         max_length=16,  # from CHEMKIN II
-        pattern="^[a-zA-Z][a-zA-Z0-9-+*()]*$",
+        pattern="^[a-zA-Z][a-zA-Z0-9-+*()=]*$",
         examples=["CH4"],
     ),
 ]

@@ -263,6 +263,20 @@ class QmEnergyCalc(CalculationBase[_QmInput, _QmEnergyData]):
     type: Literal["qm-energy"] = "qm-energy"
 
 
+class _QmIrcScanInput(_QmInput):
+    """input data for an intrinsic reaction coordinate scan"""
+
+    scan_type: Literal["forward", "reverse", "both"]
+    """direction of the scan, i.e., whether the scan was performed in the forward
+    direction (from the transition state to the reactants), reverse direction (from the
+    transition state to the products), or both directions. It is a bit arbitrary and the
+    names are different between different quantum chemistry software packages, but the
+    main purpose of this field is to distinguish different scans.
+    """
+    ts: OutputOf | None = None
+    """reference to the transition state optimization"""
+
+
 class _QmIrcScanData(RmmdBaseModel):
     """Data from an intrinsic reaction coordinate scan in a single direction"""
 
@@ -279,7 +293,7 @@ class _QmIrcScanData(RmmdBaseModel):
         return self
 
 
-class QmIrcScan(CalculationBase[_QmInput, _QmIrcScanData]):
+class QmIrcScan(CalculationBase[_QmIrcScanInput, _QmIrcScanData]):
     """intrinsic reaction coordinate scan"""
 
     type: Literal["qm-irc"] = "qm-irc"
@@ -337,8 +351,8 @@ class Conformation(RmmdBaseModel):
 #   since conformers have different "roles" in different relations and there are
 #   different numbers of possible conformations per role allowed, we do not add a common
 #   base class for relations.
-# - We do not use the `type: Literal["name of type"]` pattern to not clutter the
-#   yaml file (EquivalenceRelation which has only a single attribute).
+# - We do not use the `type: Literal["name of type"]`-pattern to not clutter the
+#   yaml file (cf. EquivalenceRelation which has only a single attribute).
 # - The relations are imutable and sorted to allow for easy comparisions in Python code
 
 
@@ -386,23 +400,25 @@ class SaddlePointRelation(RmmdFrozenBaseModel, frozen=True):
 class NoBarrierRelation(RmmdFrozenBaseModel, frozen=True):
     """relates multiple minima on a PES that are connected by a path without a barrier.
 
-    This relation is typically used for two fragments which are minima on their own PES
-    and -- when considered to be infinitely far apart -- on the combined PES to a
-    minimum on the combined PES, e.g.,
+    This relation is typically used for two fragments, which are minima on their own PES
+    and -- when considered to be infinitely far apart -- a stationary point on the
+    combined PES, to a minimum on the combined PES, e.g.,
 
     - relate a pre-reactive complexes to the optimized reactant fragments.
         Often, the association of the fragments is not relevant to the kinetics and the
         reaction is typically modeled by just considering the fragments. Using this
-        relation, one can still include the data belonging to the complex in the dataset;
+        relation, one can still include the data belonging to the complex in the
+        dataset;
     - relate two radicals which recombine without a barrier to form some product.
     """
 
-    minima: _ConformationsPair
-    """the two minima on the PES connected by a path without a barrier"""
+    barrierless_path: _ConformationsPair
+    """the two endpoints of the path on the PES"""
 
     calculations: list[CalcIndex] = Field(default_factory=list)
     """quantum chemistry calculations, i.e., the optimization of a structure containing
-    both fragments which minimizes to a complex.
+    both fragments which minimizes to a complex or a scan that shows there to be no
+    barrier for a recombination.
     """
 
 
@@ -433,6 +449,8 @@ class EquivalenceRelation(RmmdFrozenBaseModel, frozen=True):
     conformations, e.g., RMSD computation (not implemented as a calculation type yet)
     """
 
+
+# TODO Add internal conversion and intersystem crossing relations
 
 ConformationRelation: TypeAlias = (
     SaddlePointRelation | NoBarrierRelation | EquivalenceRelation

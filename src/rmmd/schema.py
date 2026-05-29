@@ -54,7 +54,7 @@ class Schema(RmmdBaseModel, extra="forbid"):
     ### electronic structure view ###
     conformations: list[Conformation] = Field(default_factory=list)
     """conformations in the dataset"""
-    conformation_relations: list[ConformationRelation] = Field(default_factory=list)
+    pes_relations: list[ConformationRelation] = Field(default_factory=list)
     """relations between conformations, e.g., which conformations are considered to be
     the same, which conformations are connected by an IRC path, ..."""
     calculations: list[_CalculationItem] = Field(default_factory=list)
@@ -65,11 +65,14 @@ class Schema(RmmdBaseModel, extra="forbid"):
     """version of the schema used"""
     license: str
     """license of this dataset"""
+    description: str | None = None
+    """description of the dataset, e.g., how it was obtained, what it contains, ..."""
 
     preferred_citation: Citation | None = None
     """how this dataset should be cited"""
     references: list[CitationKeyOrDirectReference] | None = None
-    """literature describing this dataset, e.g., a set of papers describing how the data was obtained"""
+    """literature describing this dataset, typically the paper(s) associated with the
+    dataset."""
     literature: dict[CitationKey, Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""
 
