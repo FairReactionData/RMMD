@@ -41,41 +41,39 @@ thermo:
     Cp: [[38.07, 55.35, 67.32, 98.49]]
     sources: [chen-1975]
 conformations:
-  - domain:
-      constitution: {C: 4, H: 10}
-      electronic_state: {charge: 0, spin: 0}
-    calculation: [0, 2]   # ids in the calculation list
+  - calculations: [calculations:0, calculations:2]   # ids in the calculation list
     description: "trans conformer of butane"
-  - domain:
-      constitution: {C: 4, H: 10}
-      electronic_state: {charge: 0, spin: 0}
-    calculation: [1, 3]   # ids in the calculation list
+  - calculations: [calculations:1, calculations:3]   # ids in the calculation list
     description: "gauche conformer of butane"
 calculations:
   - type: qm-optimization+frequency
-    level_of_theory: "B3LYP-D3BJ/def2-TZVP"
-    electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
+    input:
+      level_of_theory: "B3LYP-D3BJ/def2-TZVP"
+      electronic_state: {charge: 0, spin: 0}
     output: ["./data/butane_opt_trans.log"]
   - type: qm-optimization+frequency
-    level_of_theory: "B3LYP-D3BJ/def2-TZVP"
-    electronic_state: {charge: 0, spin: 0}
+    input:
+      level_of_theory: "B3LYP-D3BJ/def2-TZVP"
+      electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_opt_gauche.log"]
   - type: qm-energy
-    level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
-    electronic_state: {charge: 0, spin: 0}
+    input:
+      level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
+      electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_spe_trans.log"]
   - type: qm-energy
-    level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
-    electronic_state: {charge: 0, spin: 0}
+    input:
+      level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
+      electronic_state: {charge: 0, spin: 0}
     software:
       name: "ORCA"
       version: "5.0.3"

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 import re
+from collections import defaultdict
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
-    BaseModel,
     Field,
     ModelWrapValidatorHandler,
     ValidationError,
@@ -15,13 +14,14 @@ from pydantic import (
     model_validator,
 )
 
-from .identifiers import _FixedHInChI, StringIdentifier
+from ._base import RmmdBaseModel
+from .identifiers import StringIdentifier, _FixedHInChI
 from .keys import ConformationIndex, EntityKey, SpeciesName, ThermoIndex, TransportIndex
 from .kinetics import RateCoefficient
 from .pes import ElectronicState, PesPath
 
 
-class Species(BaseModel):
+class Species(RmmdBaseModel):
     """A chemical species."""
 
     name: str | None = None
@@ -39,7 +39,7 @@ class Species(BaseModel):
     """transport properties for this species"""
 
 
-class MolecularEntity(BaseModel):
+class MolecularEntity(RmmdBaseModel):
     """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
     Here, flexible conformational spatial rearrangements are by default not distinguished, i.e., a molecular entity can have multiple conformers.
@@ -180,7 +180,7 @@ class MolecularEntity(BaseModel):
     # TODO better canoncial representation of each layer
 
 
-class TransportProperty(BaseModel):
+class TransportProperty(RmmdBaseModel):
     """Transport property for species"""
 
     shape: Literal["atom", "linear", "nonlinear"]
@@ -205,7 +205,7 @@ class TransportProperty(BaseModel):
     """dispersion coefficient normalized by e^2 in angstroms^5"""
 
 
-class SpeciesRole(BaseModel):
+class SpeciesRole(RmmdBaseModel):
     """Node in a reaction network"""
 
     # can be extended, if necessary, subclasses for some roles can
@@ -214,7 +214,7 @@ class SpeciesRole(BaseModel):
     species: SpeciesName
 
 
-class Reaction(BaseModel):
+class Reaction(RmmdBaseModel):
     """A chemical reaction"""
 
     species: list[SpeciesRole]
@@ -314,7 +314,7 @@ Constitution = Annotated[
 """"element count, e.g. {'C': 1, 'H': 4}"""
 
 
-class MolecularConnectivity(BaseModel):
+class MolecularConnectivity(RmmdBaseModel):
     """Connectivity between atoms"""
 
     m: tuple[
@@ -367,7 +367,7 @@ class MolecularConnectivity(BaseModel):
     # TODO special values for formed and broken bonds (for transition states, etc.)
 
 
-class Stereochemistry(BaseModel):
+class Stereochemistry(RmmdBaseModel):
     """Definition of the Stereochemistry.
 
     .. note::
@@ -442,7 +442,7 @@ class Stereochemistry(BaseModel):
         return cls(m=m, f=f, fi=fi, o=o)
 
 
-class IsotopeInformation(BaseModel):
+class IsotopeInformation(RmmdBaseModel):
     """Isotopic information for a molecular entity"""
 
     mi: Annotated[str, Field(pattern=r"^(\/i.*)?$")]

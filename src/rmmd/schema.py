@@ -1,10 +1,15 @@
 # Full Schema
 from typing import Annotated, Literal, TypeAlias
 
-from rmmd.calc import NestedCalculation
+from pydantic import Field
 
+from ._base import RmmdBaseModel
+from .calc import NestedCalculation
+from .keys import CitationKey, EntityKey, SpeciesName
 from .kinetics import RateCoefficient
-
+from .metadata import Citation, CitationKeyOrDirectReference, Reference
+from .pes import Conformation, QmCalculation
+from .species import MolecularEntity, Reaction, Species, TransportProperty
 from .thermo import (
     STATE_1_BAR_298_K,
     EmpiricalThermo,
@@ -12,14 +17,6 @@ from .thermo import (
     TabularThermo,
     ThermoQmCalc,
 )
-
-from .keys import CitationKey, EntityKey, SpeciesName
-from .pes import Conformation, QmCalculation
-from .metadata import Citation, CitationKeyOrDirectReference, Reference
-from .species import MolecularEntity, Reaction, Species, TransportProperty
-
-from pydantic import BaseModel, Field
-
 
 # items in the thermo list below. Used for validation.
 _ThermoItem: TypeAlias = Annotated[
@@ -34,7 +31,7 @@ _CalculationItem: TypeAlias = Annotated[
 ]
 
 
-class Schema(BaseModel, extra="forbid"):
+class Schema(RmmdBaseModel, extra="forbid"):
     """The final schema, encapsulating all information"""
 
     ### mechanism view ###

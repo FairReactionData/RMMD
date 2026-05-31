@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Annotated, Literal, Self, TypeAlias
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 from rdkit.Chem import (
     MolBlockToInchi,
     MolFromInchi,
@@ -14,8 +14,10 @@ from rdkit.Chem import (
     MolToSmiles,
 )
 
+from ._base import RmmdBaseModel
 
-class _StringIdentifierBase(BaseModel, ABC):
+
+class _StringIdentifierBase(RmmdBaseModel, ABC):
     """Base class for string identifiers with a type field."""
 
     type: str
@@ -142,9 +144,3 @@ StringIdentifier: TypeAlias = Annotated[
     Field(discriminator="type"),
 ]
 """string identifier for a molecular entity"""
-
-
-class _StringIdentifierTest(BaseModel):
-    """class for testing the Geometry and Geometries classes"""
-
-    string_identifier_list: list[StringIdentifier]

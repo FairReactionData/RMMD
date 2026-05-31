@@ -2,9 +2,12 @@
 
 import re
 from typing import Any, Self
+
+import pytest
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from pydantic_core import ErrorDetails
-import pytest
+
+from ._base import RmmdBaseModel
 
 
 def _err_loc_str(loc: tuple[str | int, ...]) -> str:
@@ -63,7 +66,7 @@ class ExpectedError(BaseModel):
 
 
 def assert_model_validation_errors(
-    model: type[BaseModel], data: Any, expected_errors: list[ExpectedError]
+    model: type[RmmdBaseModel], data: Any, expected_errors: list[ExpectedError]
 ):
     """Assert that the model validation raises the expected errors.
 

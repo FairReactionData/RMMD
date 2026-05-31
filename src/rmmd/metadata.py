@@ -3,16 +3,18 @@ Citation-related metadata
 """
 
 from typing import Annotated
+
 from pydantic import (
     AfterValidator,
     AnyUrl,
-    BaseModel,
     Discriminator,
     Field,
     PositiveInt,
     Tag,
     UrlConstraints,
 )
+
+from ._base import RmmdBaseModel
 from .keys import CitationKey
 
 # Note: In order to use CitationKeyOrDirectReference (below), any direct
@@ -100,7 +102,7 @@ _Orcid = Annotated[
 ]
 
 
-class _Person(BaseModel):
+class _Person(RmmdBaseModel):
     """Person involved in a citation, e.g., an author or editor.
 
     cf. definitionperson in CFF schema"""
@@ -125,7 +127,7 @@ class _Person(BaseModel):
     """ORCID identifier for the citation, if applicable"""
 
 
-class _Entity(BaseModel):
+class _Entity(RmmdBaseModel):
     """Entity involved in a citation, e.g., an organization or institution."""
 
     name: Annotated[str, Field(min_length=1)]
@@ -140,7 +142,7 @@ class _Entity(BaseModel):
     """ORCID identifier for the entity, if applicable"""
 
 
-class Citation(BaseModel):
+class Citation(RmmdBaseModel):
     """Classic citation/reference using author, title, journal, etc."""
 
     title: Annotated[str, Field(min_length=1)]
