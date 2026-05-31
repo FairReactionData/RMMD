@@ -9,8 +9,10 @@ species:
     thermo: [thermo:0, thermo:1, thermo:2]
 entities:
   IJDNQMDRQITEOD-UHFFFAOYNA-N:
-    constitution: {C: 4, H: 10}
-    connectivity: {}
+    electronic_spin:
+        # some information on the electronic spin has to be provided
+        multiplicity: 1  # singlet
+        is_ground_state: True
     identifiers:
       - type: "InChI"
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"

@@ -2,23 +2,25 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import defaultdict
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     Field,
-    ModelWrapValidatorHandler,
+    NonNegativeInt,
+    PositiveInt,
     ValidationError,
-    computed_field,
+    field_validator,
     model_validator,
 )
 
-from ._base import RmmdBaseModel
-from .identifiers import StringIdentifier, _FixedHInChI
+from ._base import RmmdBaseModel, RmmdFrozenBaseModel
+from .identifiers import StringIdentifier, FixedHInChI
 from .keys import ConformationIndex, EntityKey, SpeciesName, ThermoIndex, TransportIndex
 from .kinetics import RateCoefficient
-from .pes import ElectronicState, PesPath
+from .pes import PesPath
 
 
 class Species(RmmdBaseModel):
@@ -45,16 +47,6 @@ class MolecularEntity(RmmdBaseModel):
     Here, flexible conformational spatial rearrangements are by default not distinguished, i.e., a molecular entity can have multiple conformers.
     """
 
-    # TODO canonical representation of each field; this is similar to the layers of an InChI
-    constitution: Constitution
-    connectivity: MolecularConnectivity
-    isotopes: (
-        IsotopeInformation | Literal["natural-abundance"] | Literal["most-common"]
-    ) = "natural-abundance"
-    """number of neutrons for each atom"""
-    stereo: Stereochemistry | Literal["unknown"]
-    electronic_state: ElectronicState
-    """usually the ground state is assumed"""
     defining_conformations: list[ConformationIndex] | Literal["all"] = "all"
     """While by default, all confomrations with the same stereochemistry and electronic state are considered part of the same molecular entitiy, this field can be used to restrict the set of conformations. In some cases,
     conformations have to belong to separate species to correctly model the kinetics of a system, but they have the same stereochemistry and electronic state. For example, different pre-reactive complexes where the fragements each have the same stereochemistry and electronic state, but different orientations relative to each other. In this case, the different pre-reactive complexes can be defined as different molecular entities with the same constitution, connectivity, stereo, and electronic state, but different defining_conformations.
@@ -67,11 +59,15 @@ class MolecularEntity(RmmdBaseModel):
     all conformations may have been identified.
     """
 
+    description: str | None = None
+    """human-readable description of what this molecular entity represents"""
+
     identifiers: list[StringIdentifier] = Field(
         default_factory=list,
-        description="list of string identifiers for the molecular entity",
     )
     """string identifiers for the molecular entity, e.g., InChI, SMILES, ...
+
+    At least "InChI-fixedH" has to be provided.
 
     .. examples::
 
@@ -88,96 +84,85 @@ class MolecularEntity(RmmdBaseModel):
         discouraged.
     """
 
-    @computed_field
+    electronic_spin: _KnownElectronicSpin | Literal["unkown-electronic-ground-state"]
+    """total electronic angular momentum of the molecule
+
+    While the electronic state of a molecule is ideally always defined by an
+    "electronic-spin" identifier, some user groups of RMMD that mainly work on the
+    mechanism level may not be familiar with the concept of spin. To facilitate the use
+    of RMMD for these users as well as the conversion of existing datasets that do not
+    contain multiplicity information, we allow the electronic state to be partially
+    undefined, that is, only declared as being the ground state without specifying the
+    multiplicity.
+    """
+
+    @field_validator("identifiers")
+    def _check_required_inchi_fixedh(
+        cls, identifiers: list[StringIdentifier]
+    ) -> list[StringIdentifier]:
+        """check that at a fixedH InChI is available"""
+
+        identifiers_dict = {identifier.type: identifier for identifier in identifiers}
+
+        if "InChI-fixedH" in identifiers_dict:
+            return identifiers
+
+        # try to generate a fixed-H InChI from the InChI
+        elif "InChI-fixedH" not in identifiers_dict and "InChI" in identifiers_dict:
+            fixedh_inchi = identifiers_dict["InChI"].value.replace(
+                "InChI=1S/", "InChI=1/"
+            )
+            try:
+                fixedh_inchi = FixedHInChI(
+                    value=fixedh_inchi,
+                    # recalculates the fixedH inChI from the InChI and checks if
+                    # they are equal
+                    validation_strategy="full",
+                )
+                identifiers.append(fixedh_inchi)
+                return identifiers
+
+            except ValidationError as err:
+                raise ValueError(
+                    "The provided InChI does not match the generated fixedH InChI."
+                    + " If a molecular entity contains tautomeric hydrogens, the "
+                    + "fixedH InChI must be provided explicitly."
+                ) from err
+
+        # required fixedH InChI is missing and cannot be generated
+        else:
+            raise ValueError("A fixedH InChI must be provided.")
+
+    # some helpers
     @property
-    def has_canonical_repr(self) -> bool:
-        """whether the molecular entity can be canonically represented.
+    def constitution(self) -> Constitution:
+        """element count, e.g. {'C': 1, 'H': 4}"""
 
-        If false, the molecular entity cannot be considered equal to another molecular
-        entity, even if all fields are the same.
-
-        True, if the electronic state is fully defined and the molecular entity is not
-        defined as a subset of all conformations with the same connectivity,
-        stereochemistry, etc.
-        """
-
-        return (
-            self.stereo != "unknown"
-            and self.electronic_state.spin != "unknown"
-            and self.defining_conformations == "all"
+        inchi_fixedh = next(
+            (
+                identifier.value
+                for identifier in self.identifiers
+                if identifier.type == "InChI-fixedH"
+            ),
+            None,
         )
 
-    @model_validator(mode="wrap")
-    @classmethod
-    def _create_from_fixed_h_inchi(
-        cls, data: Any, handler: ModelWrapValidatorHandler[Self]
-    ):
-        """If the molecular entity is not fully defined, but a fixed-H InChI is given,
-        the molecular entity will be created from that InChI.
-        """
-        try:
-            return handler(data)  # try to create the entity from the given data
+        return _consitution_from_inchi(inchi_fixedh)
 
-        except ValidationError as mol_entity_val_err:
-            fixed_h_inchi = None  # noqa: F841
+    @property
+    def charge(self) -> int:
+        """total charge of the molecule"""
 
-            # if only a fixed-H InChI is present, the molecular entity can be created
-            # from the InChI
-            if isinstance(data, dict) and "identifiers" in data:
-                for identifier in data["identifiers"]:
-                    if (
-                        isinstance(identifier, dict)
-                        and identifier.get("type", None) == "InChI-fixedH"
-                    ):
-                        try:
-                            fixed_h_inchi = _FixedHInChI(**identifier)
-                        except ValidationError:
-                            raise mol_entity_val_err
+        inchi_fixedh = next(
+            (
+                identifier.value
+                for identifier in self.identifiers
+                if identifier.type == "InChI-fixedH"
+            ),
+            "",
+        )
 
-                        break
-
-            if fixed_h_inchi is None:
-                raise mol_entity_val_err
-
-            if "/r" in fixed_h_inchi.value:
-                msg = (
-                    "Generation of MolEntities from InChI-fixedH with reconnecred "
-                    + "layer'/r' is currently not supported"
-                )
-                raise NotImplementedError(msg)
-
-            isotope_info = IsotopeInformation.from_fixed_h_inchi(fixed_h_inchi.value)
-            if isotope_info.mi == "" and isotope_info.fi == "":
-                isotope_info = "natural-abundance"
-
-            # TODO do not override existing fields in the dict, but check if they are
-            #      consistent with the InChI and raise an error if not
-
-            return cls(
-                constitution=_consitution_from_inchi(fixed_h_inchi.value),
-                connectivity=MolecularConnectivity.from_fixed_h_inchi(
-                    fixed_h_inchi.value
-                ),
-                stereo=Stereochemistry.from_fixed_h_inchi(fixed_h_inchi.value),
-                isotopes=isotope_info,
-                electronic_state=ElectronicState(
-                    spin="unknown", charge=_get_charge_from_inchi(fixed_h_inchi.value)
-                ),
-            )
-
-    # TODO add other strategies to create a molecular entity (e.g. from a QM optimization output)
-
-    # TODO introduce separate Molecular entity definiton? -> e.g. what about crystals, other materials
-    # TODO TS mol entitiy -> stereochemistries & connectivities of the two wells + TS connectivity
-    #
-
-    # If we explicitly represent the different information layers, we need a
-    # more concise form to refer to each entity. InChIKeys with H-layers is
-    # one way to get a canonical representation although InChIs cannot
-    # distinguish all species relevant in gas-phase kinetics contexts. The
-    # representation of each layer does not even need to be canonical, as long
-    # as we have a function that produces a canonical representation.
-    # TODO better canoncial representation of each layer
+        return _get_charge_from_inchi(inchi_fixedh)
 
 
 class TransportProperty(RmmdBaseModel):
@@ -314,170 +299,103 @@ Constitution = Annotated[
 """"element count, e.g. {'C': 1, 'H': 4}"""
 
 
-class MolecularConnectivity(RmmdBaseModel):
-    """Connectivity between atoms"""
+class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
+    """Identifier for the electronic spin state of a molecular entity."""
 
-    m: tuple[
-        Annotated[str, Field(pattern=r"^(\/c.*|)$")],
-        Annotated[str, Field(pattern=r"^(\/h.*|)$")],
-        Annotated[str, Field(pattern=r"^(\/p.*|)$")],  # empty string allowed
-    ]
-    """main layer /c, /h and /p sublayer of Inchi"""
-    f: tuple[
-        Annotated[str, Field(pattern=r"^(\/f.*|)$")],
-        Annotated[str, Field(pattern=r"^(\/h.*|)$")],
-        Annotated[str, Field(pattern=r"^(\/o.*|)$")],
-    ]
-    """/f, /h /o sublayers of fixed H layer"""
+    # possible states (after validation)
+    # multiplicity | n_unpaired | is_ground_state | hunds_rule_in_ground_state
+    # multiplicity | n_unpaired | is_ground_state | hunds_rule_in_ground_state
+    # int          | int        | True            | True
+    # int          | int        | True            | False
+    # int          | int        | False           | True
+    # int          | int        | False           | False
+    # int          | int        | "unkown"        | True
+    # int          | int        | "unkown"        | False
+    # int          | None       | True            | True
+    # int          | None       | True            | False
+    # int          | None       | False           | True
+    # int          | None       | False           | False
+    # int          | None       | "unkown"        | True
+    # int          | None       | "unkown"        | False
+    # None         | int        | True            | True
+    # None         | int        | True            | False
+    # None         | int        | False           | True
+    # None         | int        | False           | False
+    # None         | int        | "unkown"        | True
+    # None         | int        | "unkown"        | False
+    # None         | None       | True            | True
+    # None         | None       | True            | False
+    # None         | None       | False           | True
+    # None         | None       | False           | False
+    # None         | None       | "unkown"        | True
+    # None         | None       | "unkown"        | False
 
-    @classmethod
-    def from_fixed_h_inchi(cls, fixed_h_inchi: str) -> MolecularConnectivity:
-        """create MolecularConnectivity from a fixed-H InChI string
+    # TODO remove impossible states after validation -> move those to test cases that fail validation
+    # TODO decide on equality behavior for each combination of possible cases -> make test cases for that
 
-        :param fixed_h_inchi: fixed-H InChI string (asumed valid)"""
+    type: Literal["electronic-spin"] = "electronic-spin"
 
-        layers = ["/" + part for part in fixed_h_inchi.split("/")]
+    # use 2S+1 (multiplcity) instead of S (spin quantum number), because multiplicity is always an integer which is easier to handle than half-integer S
+    multiplicity: PositiveInt | None = None
+    n_unpaired: NonNegativeInt | None = None
 
-        # main layer
-        m_c = m_h = m_p = f_f = f_h = f_o = ""
-        inside_f_layer = False
-        for layer in layers:
-            if layer.startswith("/c"):
-                m_c = layer
+    is_ground_state: bool | Literal["unkown"] = "unkown"
+    """whether this is the ground state or an excited state
 
-            # /h can occur in multiple layers
-            elif layer.startswith("/h") and not inside_f_layer:
-                m_h = layer
-
-            elif layer.startswith("/p"):
-                m_p = layer
-
-            elif layer.startswith("/f"):
-                inside_f_layer = True
-                f_f = layer
-
-            elif layer.startswith("/h") and inside_f_layer:
-                f_h = layer
-
-            elif layer.startswith("/o"):
-                f_o = layer
-
-        return cls(m=(m_c, m_h, m_p), f=(f_f, f_h, f_o))
-
-    # TODO special values for formed and broken bonds (for transition states, etc.)
-
-
-class Stereochemistry(RmmdBaseModel):
-    """Definition of the Stereochemistry.
-
-    .. note::
-
-        empty stereochemistry layer do not mean unknown stereochemistry, but no
-        stereochemical information is necessary.
+    This field allows determining if two electronic states from different datasets are equal, even if one of them has an unkonw spin quantum number.
     """
 
-    m: Annotated[str, Field(pattern=r"^(\/b.*)?(\/t.*)?(\/m.*)?(\/s.*)?$")]
-    """/b, /t, /m and /s sublayers of Inchi main layer"""
-    f: Annotated[str, Field(pattern=r"^(\/b.*)?(\/t.*)?(\/m.*)?(\/s.*)?$")]
-    """/b, /t, /m and /s sublayers of Inchi fixed-H layer"""
-    fi: Annotated[str, Field(pattern=r"^(\/b.*)?(\/t.*)?(\/m.*)?(\/s.*)?$")]
-    """/b, /t, /m and /s sublayers of Inchi fixed-H layer with isotopic information"""
-    o: Annotated[str, Field(pattern=r"^(\/o.*)?$")]
-    """/o sublayer of Inchi fixed-H layer with fixedH layer
+    hunds_rule_in_ground_state: bool = True
+    """whether the electronic state follows Hund's rule of maximum multiplicity.
 
-    separate because it can be at the end of the F or the FI layer
+    Allows dealing with absolute edge cases where Hund's rule does not apply
+    (e.g., https://doi.org/10.1002/anie.200352990) and can usually be left at the
+    default value (True).
     """
 
-    @classmethod
-    def from_fixed_h_inchi(cls, fixed_h_inchi: str) -> Stereochemistry:
-        """create Stereochemistry from a fixed-H InChI string
+    @field_validator("is_ground_state")
+    def _warn_on_unkown_ground_state(
+        cls, value: bool | Literal["unkown"]
+    ) -> bool | Literal["unkown"]:
+        if value == "unkown":
+            logging.getLogger(__name__).warning(
+                "Unkown ground state for molecular entity. If the electronic state is"
+                + " known to be the ground state, setting `is_ground_state` to `True`"
+                + " is highly recommended as it allows comparing electronic states"
+                + " across datasets with unkown electronic ground states."
+            )
+        return value
 
-        :param fixed_h_inchi: fixed-H InChI string (asumed valid)"""
+    @property
+    def _is_hunds_rule_applicable(self) -> bool:
+        """whether Hund's rule of maximum multiplicity is applicable for this state"""
+        return self.is_ground_state is True and self.hunds_rule_in_ground_state is True
 
-        layers = ["/" + part for part in fixed_h_inchi.split("/")]
+    @model_validator(mode="after")
+    def _check_spin_fields(self) -> Self:
+        if (
+            self.multiplicity is None or self.n_unpaired is None
+        ) and not self._is_hunds_rule_applicable:
+            raise ValueError(
+                "'multiplicity' and 'n_unpaired' must be set, if not in ground state."
+            )
+        return self
 
-        m = f = fi = o = ""
-        inside_f_layer = False
-        inside_fi_layer = False
-        for layer in layers:
-            if (
-                layer.startswith("/b")
-                or layer.startswith("/t")
-                or layer.startswith("/m")
-                or layer.startswith("/s")
-                and not inside_f_layer
-                and not inside_fi_layer
-            ):
-                m = m + layer
+    @model_validator(mode="after")
+    def _apply_hunds_rule(self) -> Self:
+        if not self.hunds_rule_in_ground_state or self.is_ground_state is not True:
+            # Hund's rule will not be applied
+            return self
 
-            if layer.startswith("/f"):
-                inside_f_layer = True
+        if self.n_unpaired is not None and self.multiplicity is None:
+            # since instance is frozen, we have to use object.__setattr__
+            object.__setattr__(self, "multiplicity", self.n_unpaired + 1)
+        elif self.multiplicity is not None and self.n_unpaired is None:
+            object.__setattr__(self, "n_unpaired", self.multiplicity - 1)
 
-            elif (
-                layer.startswith("/b")
-                or layer.startswith("/t")
-                or layer.startswith("/m")
-                or layer.startswith("/s")
-                and inside_f_layer
-                and not inside_fi_layer
-            ):
-                f = f + layer
-
-            if layer.startswith("/i"):
-                inside_fi_layer = True
-                inside_f_layer = False
-
-            elif (
-                layer.startswith("/b")
-                or layer.startswith("/t")
-                or layer.startswith("/m")
-                or layer.startswith("/s")
-                and inside_fi_layer
-            ):
-                fi = fi + layer
-
-            elif layer.startswith("/o"):
-                o = layer
-
-        return cls(m=m, f=f, fi=fi, o=o)
-
-
-class IsotopeInformation(RmmdBaseModel):
-    """Isotopic information for a molecular entity"""
-
-    mi: Annotated[str, Field(pattern=r"^(\/i.*)?$")]
-    """MI sublayer"""
-    fi: Annotated[str, Field(pattern=r"^(\/i.*)?$")]
-    """FI sublayer"""
-
-    @classmethod
-    def from_fixed_h_inchi(cls, fixed_h_inchi: str) -> IsotopeInformation:
-        """create IsotopeInformation from a fixed-H InChI string
-
-        :param fixed_h_inchi: fixed-H InChI string (asumed valid)"""
-
-        layers = ["/" + part for part in fixed_h_inchi.split("/")]
-
-        mi = fi = ""
-
-        inside_mi_layer = False
-        inside_f_layer = False
-        inside_fi_layer = False
-        for layer in layers:
-            if layer.startswith("/i"):
-                if inside_f_layer:
-                    inside_fi_layer = True
-                else:
-                    inside_mi_layer = True
-
-            if layer.startswith("/f"):
-                inside_mi_layer = False  # main /i layer ended by /f layer
-                inside_f_layer = True
-
-            if inside_mi_layer:
-                mi += layer
-
-            if inside_fi_layer:
-                fi += layer
-
-        return cls(mi=mi, fi=fi)
+        elif self.multiplicity is not None and self.n_unpaired is not None:
+            if self.multiplicity != self.n_unpaired + 1:
+                raise ValueError(
+                    f"Multiplicity {self.multiplicity} does not match n_unpaired {self.n_unpaired} according to Hund's rule."
+                )
+        return self
