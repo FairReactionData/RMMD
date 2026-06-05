@@ -50,7 +50,7 @@ conformations:
     calculations: [calculations:4]
 pes_relations:
   - saddle_point: conformations:2
-    minima:
+    end_points:
       - [conformations:0]
       - [conformations:1]
     calculations: [calculations:5]

@@ -11,8 +11,10 @@ from typing import Annotated, Literal, TypeAlias
 from annotated_types import MinLen
 from pydantic import (
     AfterValidator,
+    Discriminator,
     Field,
     NonNegativeInt,
+    Tag,
     model_validator,
 )
 
@@ -263,7 +265,7 @@ class QmEnergyCalc(CalculationBase[_QmInput, _QmEnergyData]):
     type: Literal["qm-energy"] = "qm-energy"
 
 
-class _QmIrcScanInput(_QmInput):
+class QmIrcScanInput(_QmInput):
     """input data for an intrinsic reaction coordinate scan"""
 
     scan_type: Literal["forward", "reverse", "both"]
@@ -293,7 +295,7 @@ class _QmIrcScanData(RmmdBaseModel):
         return self
 
 
-class QmIrcScan(CalculationBase[_QmIrcScanInput, _QmIrcScanData]):
+class QmIrcScan(CalculationBase[QmIrcScanInput, _QmIrcScanData]):
     """intrinsic reaction coordinate scan"""
 
     type: Literal["qm-irc"] = "qm-irc"
@@ -357,7 +359,10 @@ class Conformation(RmmdBaseModel):
 
 
 _ConformationIds: TypeAlias = Annotated[
-    tuple[ConformationIndex, ...], AfterValidator(sorted), MinLen(1)
+    tuple[ConformationIndex, ...],
+    # use lambda to convert list returned by sorted into tuple
+    AfterValidator(lambda x: tuple(sorted(x))),
+    MinLen(1),
 ]
 """list of multiple conformations
 
@@ -367,8 +372,23 @@ matter, therefore, the list is automatically sorted to simplify comparison in Py
 code.
 """
 
+
+def _sort_conformations_pair(
+    value: tuple[_ConformationIds, _ConformationIds],
+) -> tuple[_ConformationIds, _ConformationIds]:
+    # first entry of a tuple has higher priority when comparing -> sort by length first
+    # and then lexicographically
+    if (len(value[0]), value[0]) > (len(value[1]), value[1]):
+        return value[1], value[0]
+
+    return value
+
+
 _ConformationsPair: TypeAlias = Annotated[
-    tuple[_ConformationIds, _ConformationIds], AfterValidator(sorted)
+    tuple[_ConformationIds, _ConformationIds],
+    # sort by length first, so that all bimolecular-unimolecular pairs are sorted in the
+    # same way
+    AfterValidator(_sort_conformations_pair),
 ]
 """pair of conformations used in multiple relations
 
@@ -377,27 +397,41 @@ pair is automatically sorted to simplify comparison in Python code.
 """
 
 
-class SaddlePointRelation(RmmdFrozenBaseModel, frozen=True):
+# private base class to avoid confusion with Relation TypeAlias below
+class _RelationBase(RmmdFrozenBaseModel, frozen=True):
+    calculations: list[CalcIndex] = Field(default_factory=list)
+    """calculations used to confirm this relation.
+
+    For a transition state, include an IRC calculation that confirms that a saddle point connects two minima can be listed here. The transition state optimization should not be listed here but be listed at the conformation representing the transition state. If the normal modes of the transition state were used to confirm this relation, the calculation containing the frequencies can be listed here as well.
+
+    For a barrierless path, include the optimization of the complex or the scan that shows there to be no barrier for a recombination.
+
+    For an equivalence relation, include the calculations that were used to determine the equivalence of the conformations, e.g., RMSD computation (not implemented as a calculation type yet).
+    """
+
+
+# public to allow isinstance(relation, PathRelation) checks and "path-only" type hints
+class PathRelation(_RelationBase, frozen=True):
+    """relations presenting a path on the PES"""
+
+    end_points: _ConformationsPair
+    """the two endpoints of the path on the PES"""
+
+    saddle_point: ConformationIndex | Literal["barrierless"]
+    """the saddle point, or "col", of the path."""
+
+
+class SaddlePointRelation(PathRelation, frozen=True):
     """relates a saddle point on the PES to the minima that it connects.
 
     Note, that `minimum1` and `minimum2` should point to minima and not simply IRC endpoints, i.e. the last geometries of an IRC scan. IRC endpoint geometries can be included as output of IRC calculations and linked to this relation.
     """
 
     saddle_point: ConformationIndex
-    """saddle point, or "col", of the IRC path"""
-
-    minima: _ConformationsPair
-    """the two minima on the PES connected by the saddle point"""
-
-    calculations: list[CalcIndex] = Field(default_factory=list)
-    """quantum chemistry calculations for this IRC path, e.g., the IRC calculation(s)
-    themselves.
-
-    The transition state optimization should not be listed here but be listed at the conformation representing the transition state. If the normal modes of the transition state were used to confirm this relation, the calculation containing the frequencies can be listed here as well.
-    """
+    """saddle point, or "col", of the path"""
 
 
-class NoBarrierRelation(RmmdFrozenBaseModel, frozen=True):
+class NoBarrierRelation(PathRelation, frozen=True):
     """relates multiple minima on a PES that are connected by a path without a barrier.
 
     This relation is typically used for two fragments, which are minima on their own PES
@@ -412,17 +446,11 @@ class NoBarrierRelation(RmmdFrozenBaseModel, frozen=True):
     - relate two radicals which recombine without a barrier to form some product.
     """
 
-    barrierless_path: _ConformationsPair
-    """the two endpoints of the path on the PES"""
-
-    calculations: list[CalcIndex] = Field(default_factory=list)
-    """quantum chemistry calculations, i.e., the optimization of a structure containing
-    both fragments which minimizes to a complex or a scan that shows there to be no
-    barrier for a recombination.
-    """
+    saddle_point: Literal["barrierless"] = "barrierless"
+    """no saddle point on the PES, i.e., the path is barrierless"""
 
 
-class EquivalenceRelation(RmmdFrozenBaseModel, frozen=True):
+class EquivalenceSet(_RelationBase, frozen=True):
     """Relation linking conformations that are considered to be the same conformation.
 
     While multiple calculations such as different geometry optimizations at different
@@ -444,15 +472,38 @@ class EquivalenceRelation(RmmdFrozenBaseModel, frozen=True):
     equivalent: set[ConformationIndex]
     """indeces of conformations that are considered to be the same"""
 
-    calculations: list[CalcIndex] = Field(default_factory=list)
-    """can be used for linking that were used to determine the equivalence of the
-    conformations, e.g., RMSD computation (not implemented as a calculation type yet)
-    """
+
+def _relation_discriminator(value: _RelationBase | dict) -> str | None:
+    """discriminator for the different relation types for faster determinatino of the relation type and smaller error messages"""
+
+    if isinstance(value, dict):
+        if "saddle_point" in value:
+            if value["saddle_point"] == "barrierless":
+                return "barrierless"
+            else:
+                return "saddle-point"
+        elif "equivalent" in value:
+            return "equivalence"
+
+    if isinstance(value, EquivalenceSet):
+        return "equivalence"
+    elif isinstance(value, NoBarrierRelation):
+        return "barrierless"
+    elif isinstance(value, SaddlePointRelation):
+        return "saddle-point"
+
+    raise ValueError(
+        "Could not determine type of relation. Expected at least one of the following "
+        "keys: 'saddle_point' or 'equivalent'."
+    )
 
 
 # TODO Add internal conversion and intersystem crossing relations
 
-ConformationRelation: TypeAlias = (
-    SaddlePointRelation | NoBarrierRelation | EquivalenceRelation
-)
+ConformationRelation: TypeAlias = Annotated[
+    Annotated[SaddlePointRelation, Tag("saddle-point")]
+    | Annotated[NoBarrierRelation, Tag("barrierless")]
+    | Annotated[EquivalenceSet, Tag("equivalence")],
+    Discriminator(_relation_discriminator),
+]
 """Relations between conformations, e.g., which conformations are considered to be"""

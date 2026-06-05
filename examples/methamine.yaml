@@ -198,28 +198,31 @@ conformations:
 pes_relations:
   # PRC1 - TS7 - cis-CH=NH, validated by an IRC scan
   - saddle_point: conformations:9
-    minima: [[conformations:6], [conformations:3]]
+    end_points: [[conformations:6], [conformations:3]]
     calculations: [calculations:11]
   # PRC2 - TS8 - trans-CH=NH
   - saddle_point: conformations:10
-    minima: [[conformations:7], [conformations:4]]
+    end_points: [[conformations:7], [conformations:4]]
     # two IRC scans were used for validation
     calculations: [calculations:13, calculations:14]
   # PRC3 - TS9 - CH2N
   - saddle_point: conformations:11
-    minima: [[conformations:8], [conformations:5]]
+    end_points: [[conformations:8], [conformations:5]]
     # one IRC scan for validation
     calculations: [calculations:15]
   # there is no barrier between the reactants and the three pre-reactive complexes:
-  - barrierless_path:
+  - saddle_point: barrierless
+    end_points:
       - [conformations:6]
       - [conformations:0, conformations:1]
     # the absence of a barrier was confirmed by a scan/constrained optimizations
     calculations: [calculations:16]
-  - barrierless_path:
+  - saddle_point: barrierless
+    end_points:
       - [conformations:7]
       - [conformations:0, conformations:1]
-  - barrierless_path:
+  - saddle_point: barrierless
+    end_points:
       - [conformations:8]
       - [conformations:0, conformations:1]
 # The following calculations were not actually performed but serve as example of how to
