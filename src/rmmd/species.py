@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeAlias
 
 from annotated_types import Gt, Le, MinLen
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from ._base import RmmdBaseModel
 from .identifiers import StringIdentifier
@@ -144,7 +144,7 @@ class Reaction(RmmdBaseModel):
     solvent: SpeciesName | Mixture | None = None
     catalyst: SpeciesName | None = None
 
-    transition_state: SpeciesName | None = None
+    transition_state: EntityKey | None = None
     """for an elementary reaction, the transition state can be provided.
     """
     steps: list[ReactionIndex] = Field(default_factory=list)
@@ -185,6 +185,17 @@ class Reaction(RmmdBaseModel):
             solvent=self.solvent,
             catalyst=self.catalyst,
         )
+
+    @model_validator(mode="after")
+    def _elementary_reaction_check(self) -> Reaction:
+        """Check consistency between existence of steps and a transition state."""
+
+        if (self.steps or self.parallel_steps) and self.transition_state:
+            raise ValueError(
+                "Reaction defines steps and a transition state, but only elementary"
+                + " reactions can have a transition state."
+            )
+        return self
 
 
 ##############################################################################

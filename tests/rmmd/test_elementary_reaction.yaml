@@ -1,0 +1,24 @@
+--- # test setup
+description: Test reaction validation
+schema_part: species.Reaction
+test_type: multiple
+failures:
+  - loc: [2]  # third reaction in here is invalid
+    msg_pattern: 'Value error, Reaction defines steps and a transition state.*'
+---
+# valid step wise reaction
+- reactants: [NO2, CO]
+  products: ["NO", CO2]
+  steps: [reactions:1, reactions:2]
+
+# valid elementary reaction
+- reactants: [NO2, NO2]
+  products: [NO3, "NO"]
+  transition_state: "XXXXXXXXXXXXXX-XXXXXXXXXX-X"
+  description: "Elementary step 1: NO2 + NO2 -> NO3 + NO"
+
+# invalid: TS and steps
+- reactants: [NO3, CO]
+  products: [NO2, CO2]
+  transition_state: "XXXXXXXXXXXXXX-XXXXXXXXXX-X"
+  steps: [reactions:1, reactions:2]
