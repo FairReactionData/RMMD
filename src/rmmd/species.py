@@ -150,8 +150,13 @@ class Reaction(RmmdBaseModel):
     steps: list[ReactionIndex] = Field(default_factory=list)
     """consecutive reaction steps
 
-    allows modelling step-wise reactions by defining their elementary steps as separate
-    reactions and linking them vis this field.
+    Allows modelling step-wise reactions by defining their elementary steps as separate
+    reactions and linking them via this field. Since an elementary reaction is also a
+    reaction, this list contains references to other reactions.
+
+    .. note::
+
+        While RMMD allows composing reactions from multiple steps which can also be composed of steps, this is discouraged. Researchers are encouraged to validate that the reactions they list as `steps` of a step-wise reaction are indeed elementary reactions.
     """
     parallel_steps: list[ReactionIndex] = Field(default_factory=list)
     """parallel reaction steps
