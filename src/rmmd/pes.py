@@ -8,17 +8,20 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, TypeAlias
 
+from annotated_types import MinLen
 from pydantic import (
+    AfterValidator,
+    Discriminator,
     Field,
     NonNegativeInt,
-    PositiveInt,
+    Tag,
     model_validator,
 )
 
-from ._base import RmmdBaseModel
-from .calc import CalculationBase
+from ._base import RmmdBaseModel, RmmdFrozenBaseModel
+from .calc import CalculationBase, OutputOf
 from .elements import ElementSymbol
-from .keys import CalcIndex, ConformationIndex, EntityKey
+from .keys import CalcIndex, ConformationIndex
 
 
 class ElectronicState(RmmdBaseModel, frozen=True):
@@ -161,6 +164,9 @@ class _QmOptInput(_QmInput):
     )
     """constraints on the internal coordinates during the optimization"""
 
+    initial_geometry: Geometry | OutputOf | None = None
+    """initial geometry for the optimization."""
+
 
 class _QmOptData(RmmdBaseModel):
     """Data from a geometry optimization calculation"""
@@ -259,6 +265,20 @@ class QmEnergyCalc(CalculationBase[_QmInput, _QmEnergyData]):
     type: Literal["qm-energy"] = "qm-energy"
 
 
+class QmIrcScanInput(_QmInput):
+    """input data for an intrinsic reaction coordinate scan"""
+
+    scan_type: Literal["forward", "reverse", "both"]
+    """direction of the scan, i.e., whether the scan was performed in the forward
+    direction (from the transition state to the reactants), reverse direction (from the
+    transition state to the products), or both directions. It is a bit arbitrary and the
+    names are different between different quantum chemistry software packages, but the
+    main purpose of this field is to distinguish different scans.
+    """
+    ts: OutputOf | None = None
+    """reference to the transition state optimization"""
+
+
 class _QmIrcScanData(RmmdBaseModel):
     """Data from an intrinsic reaction coordinate scan in a single direction"""
 
@@ -275,7 +295,7 @@ class _QmIrcScanData(RmmdBaseModel):
         return self
 
 
-class QmIrcScan(CalculationBase[_QmInput, _QmIrcScanData]):
+class QmIrcScan(CalculationBase[QmIrcScanInput, _QmIrcScanData]):
     """intrinsic reaction coordinate scan"""
 
     type: Literal["qm-irc"] = "qm-irc"
@@ -310,52 +330,180 @@ class Conformation(RmmdBaseModel):
     exact stationary point on the potential energy surface (PES) of its
     molecular  entity (using the Born-Oppenheimer approximation). These spatial
     arragements are approximated by minimum or saddle point optimizations with
-    a particular quantum chemistry method.
+    a particular quantum chemistry method. They do not correspond to a single concrete
+    set of internal coordinates, but rather a label for a stationary point. Concrete
+    coordinates can be added as the output of quantum chemistry optimization
+    calculations.
     """
 
     description: str | None = None
     """human-readable description of the point"""
 
+    type: Literal["minimum", "saddle-point"] | None = None
+    """type of the point on the PES"""
+
     calculations: list[CalcIndex] = Field(default_factory=list)
-    """quantum chemistry calculations for this point"""
+    """quantum chemistry calculations for this point, e.g.,  geometry optimizations,
+    frequency calculations, single point energy calculations, ...
+    """
 
 
-ConformationalEnsemble = Annotated[
-    list[tuple[ConformationIndex, PositiveInt]], Field(min_length=1)
+# design considerations for the relations between conformations:
+# - as similar/consistent as possible, e.g., each having a list of calculations, but
+#   since conformers have different "roles" in different relations and there are
+#   different numbers of possible conformations per role allowed, we do not add a common
+#   base class for relations.
+# - We do not use the `type: Literal["name of type"]`-pattern to not clutter the
+#   yaml file (cf. EquivalenceRelation which has only a single attribute).
+# - The relations are imutable and sorted to allow for easy comparisions in Python code
+
+
+_ConformationIds: TypeAlias = Annotated[
+    tuple[ConformationIndex, ...],
+    # use lambda to convert list returned by sorted into tuple
+    AfterValidator(lambda x: tuple(sorted(x))),
+    MinLen(1),
 ]
-"""ensemble of conformations
+"""list of multiple conformations
 
-Used when multiple points interconvert fast w.r.t. the timescale of interest,
-e.g.; conformers, ...
-Each point has a degeneracy which can be provided explicitly as number or
-implicitly by introducing additional members each with degeneracy one.
-For example, the conformer ensemble of butane could be represented as [(0, 1),
-(1, 1), (2, 1)] or [(0, 1), (1, 2)]. Where 0 is the point representing the
-trans conformer and 1 and 2 are points representing the two mirror images of
-the gauche conformer.
-"""
-
-PointSequence = Annotated[list[ConformationIndex], Field(min_length=1)]
-"""path connecting stationary points on a potential energy surface, e.g., a
-IRC path, frozen scane, ...
-"""
-
-Well: TypeAlias = set[EntityKey]
-"""n-molecular well - set of molecular entities which are minima on a PES
-"""
-
-TransitionState: TypeAlias = EntityKey
-"""a transition state
-
-represented by a molecular entity whose connectivity is a condensed reaction
-graph
+Conformations may appear multiple times in the list, if their stoichiometric coefficient
+is greater than one. When determining if two lists are equal, their order does not
+matter, therefore, the list is automatically sorted to simplify comparison in Python
+code.
 """
 
 
-class PesPath(RmmdBaseModel):
-    """An Edge/"ReactionStep" in a detailed PES network"""
+def _sort_conformations_pair(
+    value: tuple[_ConformationIds, _ConformationIds],
+) -> tuple[_ConformationIds, _ConformationIds]:
+    # first entry of a tuple has higher priority when comparing -> sort by length first
+    # and then lexicographically
+    if (len(value[0]), value[0]) > (len(value[1]), value[1]):
+        return value[1], value[0]
 
-    stages: tuple[Well, Well]
-    """product and reactant wells"""
-    transition_state: TransitionState
-    """transition state"""
+    return value
+
+
+_ConformationsPair: TypeAlias = Annotated[
+    tuple[_ConformationIds, _ConformationIds],
+    # sort by length first, so that all bimolecular-unimolecular pairs are sorted in the
+    # same way
+    AfterValidator(_sort_conformations_pair),
+]
+"""pair of conformations used in multiple relations
+
+When determining if two pairs are equal, their order does not matter, therefore, the
+pair is automatically sorted to simplify comparison in Python code.
+"""
+
+
+# private base class to avoid confusion with Relation TypeAlias below
+class _RelationBase(RmmdFrozenBaseModel, frozen=True):
+    calculations: list[CalcIndex] = Field(default_factory=list)
+    """calculations used to confirm this relation.
+
+    For a transition state, include an IRC calculation that confirms that a saddle point connects two minima can be listed here. The transition state optimization should not be listed here but be listed at the conformation representing the transition state. If the normal modes of the transition state were used to confirm this relation, the calculation containing the frequencies can be listed here as well.
+
+    For a barrierless path, include the optimization of the complex or the scan that shows there to be no barrier for a recombination.
+
+    For an equivalence relation, include the calculations that were used to determine the equivalence of the conformations, e.g., RMSD computation (not implemented as a calculation type yet).
+    """
+
+
+# public to allow isinstance(relation, PathRelation) checks and "path-only" type hints
+class PathRelation(_RelationBase, frozen=True):
+    """relations presenting a path on the PES"""
+
+    end_points: _ConformationsPair
+    """the two endpoints of the path on the PES"""
+
+    saddle_point: ConformationIndex | Literal["barrierless"]
+    """the saddle point, or "col", of the path."""
+
+
+class SaddlePointRelation(PathRelation, frozen=True):
+    """relates a saddle point on the PES to the minima that it connects.
+
+    Note, that `minimum1` and `minimum2` should point to minima and not simply IRC endpoints, i.e. the last geometries of an IRC scan. IRC endpoint geometries can be included as output of IRC calculations and linked to this relation.
+    """
+
+    saddle_point: ConformationIndex
+    """saddle point, or "col", of the path"""
+
+
+class NoBarrierRelation(PathRelation, frozen=True):
+    """relates multiple minima on a PES that are connected by a path without a barrier.
+
+    This relation is typically used for two fragments, which are minima on their own PES
+    and -- when considered to be infinitely far apart -- a stationary point on the
+    combined PES, to a minimum on the combined PES, e.g.,
+
+    - relate a pre-reactive complexes to the optimized reactant fragments.
+        Often, the association of the fragments is not relevant to the kinetics and the
+        reaction is typically modeled by just considering the fragments. Using this
+        relation, one can still include the data belonging to the complex in the
+        dataset;
+    - relate two radicals which recombine without a barrier to form some product.
+    """
+
+    saddle_point: Literal["barrierless"] = "barrierless"
+    """no saddle point on the PES, i.e., the path is barrierless"""
+
+
+class EquivalenceSet(_RelationBase, frozen=True):
+    """Relation linking conformations that are considered to be the same conformation.
+
+    While multiple calculations such as different geometry optimizations at different
+    levels of theory can be linked to a single conformation, not doing so can be useful.
+    Typically, researchers will first have a set of concrete optimized coordinates and
+    then determine which of those can be considered the same conformation, e.g., by
+    comparing their energies and geometries. First, you could assign each optimized
+    geometry to a separate conformation and potentially link a single point energy or
+    frequency calculation to these geoemtries through teh conformation. Then, you can
+    compare the conformations and use this relation to link conformations which should
+    be the same.
+    Additionaly, there are multiple ways to do this comparison and different thresholds,
+    can be applied, e.g., for the RMSD or rotational constant. This would lead to
+    different assignments of the optimized geometries to conformations. Assigning each
+    optimized geometry to a separate conformation first and declaring them to be equal
+    using this relation allows one to remain flexible.
+    """
+
+    equivalent: set[ConformationIndex]
+    """indeces of conformations that are considered to be the same"""
+
+
+def _relation_discriminator(value: _RelationBase | dict) -> str | None:
+    """discriminator for the different relation types for faster determinatino of the relation type and smaller error messages"""
+
+    if isinstance(value, dict):
+        if "saddle_point" in value:
+            if value["saddle_point"] == "barrierless":
+                return "barrierless"
+            else:
+                return "saddle-point"
+        elif "equivalent" in value:
+            return "equivalence"
+
+    if isinstance(value, EquivalenceSet):
+        return "equivalence"
+    elif isinstance(value, NoBarrierRelation):
+        return "barrierless"
+    elif isinstance(value, SaddlePointRelation):
+        return "saddle-point"
+
+    raise ValueError(
+        "Could not determine type of relation. Expected at least one of the following "
+        "keys: 'saddle_point' or 'equivalent'."
+    )
+
+
+# TODO Add internal conversion and intersystem crossing relations
+
+ConformationRelation: TypeAlias = Annotated[
+    Annotated[SaddlePointRelation, Tag("saddle-point")]
+    | Annotated[NoBarrierRelation, Tag("barrierless")]
+    | Annotated[EquivalenceSet, Tag("equivalence")],
+    Discriminator(_relation_discriminator),
+]
+"""Relations between conformations, e.g., which conformations are considered to be"""
