@@ -26,32 +26,22 @@ reactions:
     description: "Elementary step 2: NO3 + CO -> NO2 + CO2"
 entities:
   JCXJVPUVTGWSNB-UHFFFAOYNA-N:
-    identifiers:
-      - type: InChI
-        value: InChI=1S/NO2/c2-1-3
-    constitution: {N: 1, O: 2}
-    connectivity: {}
+    inchi_fixedh:
+        value: InChI=1/NO2/c2-1-3
+    electronic_spin: "unkown-electronic-ground-state"
   MWUXSHHQAYIFBG-UHFFFAOYNA-N:
-    identifiers:
-      - type: InChI
-        value: InChI=1S/NO/c1-2
-    constitution: {N: 1, O: 1}
-    connectivity: {}
+    inchi_fixedh:
+        value: InChI=1/NO/c1-2
+    electronic_spin: "unkown-electronic-ground-state"
   QWOQZJYJXQTVEN-UHFFFAOYSA-N:
-    identifiers:
-      - type: InChI
-        value: InChI=1S/NO3/c2-1(3)4
-    constitution: {N: 1, O: 3}
-    connectivity: {}
+    inchi_fixedh:
+        value: InChI=1/NO3/c2-1(3)4
+    electronic_spin: "unkown-electronic-ground-state"
   UGFAIRIUMAVXCW-UHFFFAOYSA-N:
-    identifiers:
-      - type: InChI
-        value: InChI=1S/CO/c1-2
-    constitution: {C: 1, O: 1}
-    connectivity: {}
+    inchi_fixedh:
+        value: InChI=1/CO/c1-2
+    electronic_spin: "unkown-electronic-ground-state"
   CURLTUGMZLYLDI-UHFFFAOYSA-N:
-    identifiers:
-      - type: InChI
-        value: InChI=1S/CO2/c2-1-3
-    constitution: {C: 1, O: 2}
-    connectivity: {}
+    inchi_fixedh:
+        value: InChI=1/CO2/c2-1-3
+    electronic_spin: "unkown-electronic-ground-state"

@@ -25,13 +25,13 @@ from .identifiers import StringIdentifier
 from .keys import CalcIndex, ConformationIndex
 
 
-class ElectronicState(RmmdBaseModel, frozen=True):
+class ElectronicState(RmmdFrozenBaseModel, frozen=True):
     """Definition of the electronic state"""
 
     charge: int
     """total charge"""
-    spin: NonNegativeInt | Literal["unknown"]
-    """2S - two times the electron spin quantum number"""
+    multiplicity: NonNegativeInt
+    """2S+1 - two times the electron spin quantum number + 1"""
 
     description: str | None = None
     """human-readable description of the electronic state, e.g. "ground state"
@@ -40,28 +40,6 @@ class ElectronicState(RmmdBaseModel, frozen=True):
     add additional information about the electronic state, e.g., the term
     symbol
     """
-
-    @model_validator(mode="after")
-    def require_description_for_unknown_spin(self):
-        """require a description if the spin is unknown"""
-        if self.spin == "unknown" and not self.description:
-            raise ValueError("Description is required if the spin is unknown")
-        return self
-
-
-class ElectronicStateWitSpin(ElectronicState, frozen=True):
-    """Electronic state with spin multiplicity
-
-    This model should be used where the spin multiplicity is required, e.g., in
-    quantum chemistry calculations.
-    """
-
-    spin: NonNegativeInt
-    """2S - two times the electron spin quantum number"""
-
-    def spin_multiplicity(self) -> int:
-        """spin multiplicity, i.e. 2S+1"""
-        return self.spin + 1
 
 
 LevelOfTheory = Annotated[
