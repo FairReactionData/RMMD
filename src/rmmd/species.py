@@ -11,16 +11,17 @@ from pydantic import (
     Field,
     NonNegativeInt,
     PositiveInt,
-    ValidationError,
     field_validator,
     model_validator,
 )
 
 from ._base import RmmdBaseModel, RmmdFrozenBaseModel
-from .identifiers import StringIdentifier, FixedHInChI
+from .identifiers import FixedHInChI
 from .keys import ConformationIndex, EntityKey, SpeciesName, ThermoIndex, TransportIndex
 from .kinetics import RateCoefficient
 from .pes import PesPath
+
+UNKOWN_GROUND_STATE = "unkown-electronic-ground-state"
 
 
 class Species(RmmdBaseModel):
@@ -44,6 +45,7 @@ class Species(RmmdBaseModel):
 class MolecularEntity(RmmdBaseModel):
     """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
+    A molecular entity is defined by its constitution, connectivity, stereochemistry and electronic state. The former three are defined via a InChI-fixedH.
     Here, flexible conformational spatial rearrangements are by default not distinguished, i.e., a molecular entity can have multiple conformers.
     """
 
@@ -51,6 +53,11 @@ class MolecularEntity(RmmdBaseModel):
     """While by default, all confomrations with the same stereochemistry and electronic state are considered part of the same molecular entitiy, this field can be used to restrict the set of conformations. In some cases,
     conformations have to belong to separate species to correctly model the kinetics of a system, but they have the same stereochemistry and electronic state. For example, different pre-reactive complexes where the fragements each have the same stereochemistry and electronic state, but different orientations relative to each other. In this case, the different pre-reactive complexes can be defined as different molecular entities with the same constitution, connectivity, stereo, and electronic state, but different defining_conformations.
     """
+
+    inchi_fixedh: FixedHInChI
+    """value of the identifier (InChI-fixedH) that defines the connectivity, charge and
+    stereochemistry of the molecular entity."""
+
     conformations: list[ConformationIndex] = Field(default_factory=list)
     """list of conformations that have been identified for this molecular entity.
 
@@ -61,28 +68,6 @@ class MolecularEntity(RmmdBaseModel):
 
     description: str | None = None
     """human-readable description of what this molecular entity represents"""
-
-    identifiers: list[StringIdentifier] = Field(
-        default_factory=list,
-    )
-    """string identifiers for the molecular entity, e.g., InChI, SMILES, ...
-
-    At least "InChI-fixedH" has to be provided.
-
-    .. examples::
-
-        - `{"type": "InChI", "value": "InChI=1S/CH4/h1H4"}`
-        - `{"type": "custom", "label": "AMChI",
-        "value": "AMChI=1/C5H9/c1-3-5-4-2/h3-5H,1-2H3/b5-3+,5-4+"}`
-
-    .. note::
-
-        The "custom" type is used for identifiers that do not fit into the
-        standard types. Programs who use the starndard identifiers (InChI,
-        SMILES) will read fields with type "InChI" or "SMILES". So, while it is
-        possible to supply an InChI via a custom identifier, it is stronlgy
-        discouraged.
-    """
 
     electronic_spin: _KnownElectronicSpin | Literal["unkown-electronic-ground-state"]
     """total electronic angular momentum of the molecule
@@ -96,73 +81,16 @@ class MolecularEntity(RmmdBaseModel):
     multiplicity.
     """
 
-    @field_validator("identifiers")
-    def _check_required_inchi_fixedh(
-        cls, identifiers: list[StringIdentifier]
-    ) -> list[StringIdentifier]:
-        """check that at a fixedH InChI is available"""
-
-        identifiers_dict = {identifier.type: identifier for identifier in identifiers}
-
-        if "InChI-fixedH" in identifiers_dict:
-            return identifiers
-
-        # try to generate a fixed-H InChI from the InChI
-        elif "InChI-fixedH" not in identifiers_dict and "InChI" in identifiers_dict:
-            fixedh_inchi = identifiers_dict["InChI"].value.replace(
-                "InChI=1S/", "InChI=1/"
-            )
-            try:
-                fixedh_inchi = FixedHInChI(
-                    value=fixedh_inchi,
-                    # recalculates the fixedH inChI from the InChI and checks if
-                    # they are equal
-                    validation_strategy="full",
-                )
-                identifiers.append(fixedh_inchi)
-                return identifiers
-
-            except ValidationError as err:
-                raise ValueError(
-                    "The provided InChI does not match the generated fixedH InChI."
-                    + " If a molecular entity contains tautomeric hydrogens, the "
-                    + "fixedH InChI must be provided explicitly."
-                ) from err
-
-        # required fixedH InChI is missing and cannot be generated
-        else:
-            raise ValueError("A fixedH InChI must be provided.")
-
     # some helpers
     @property
     def constitution(self) -> Constitution:
         """element count, e.g. {'C': 1, 'H': 4}"""
-
-        inchi_fixedh = next(
-            (
-                identifier.value
-                for identifier in self.identifiers
-                if identifier.type == "InChI-fixedH"
-            ),
-            None,
-        )
-
-        return _consitution_from_inchi(inchi_fixedh)
+        return _consitution_from_inchi(self.inchi_fixedh)
 
     @property
     def charge(self) -> int:
         """total charge of the molecule"""
-
-        inchi_fixedh = next(
-            (
-                identifier.value
-                for identifier in self.identifiers
-                if identifier.type == "InChI-fixedH"
-            ),
-            "",
-        )
-
-        return _get_charge_from_inchi(inchi_fixedh)
+        return _get_charge_from_inchi(self.inchi_fixedh)
 
 
 class TransportProperty(RmmdBaseModel):
@@ -304,34 +232,14 @@ class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
 
     # possible states (after validation)
     # multiplicity | n_unpaired | is_ground_state | hunds_rule_in_ground_state
-    # multiplicity | n_unpaired | is_ground_state | hunds_rule_in_ground_state
     # int          | int        | True            | True
     # int          | int        | True            | False
     # int          | int        | False           | True
     # int          | int        | False           | False
     # int          | int        | "unkown"        | True
     # int          | int        | "unkown"        | False
-    # int          | None       | True            | True
-    # int          | None       | True            | False
-    # int          | None       | False           | True
-    # int          | None       | False           | False
-    # int          | None       | "unkown"        | True
-    # int          | None       | "unkown"        | False
-    # None         | int        | True            | True
-    # None         | int        | True            | False
-    # None         | int        | False           | True
-    # None         | int        | False           | False
-    # None         | int        | "unkown"        | True
-    # None         | int        | "unkown"        | False
-    # None         | None       | True            | True
-    # None         | None       | True            | False
-    # None         | None       | False           | True
-    # None         | None       | False           | False
-    # None         | None       | "unkown"        | True
-    # None         | None       | "unkown"        | False
 
     # TODO remove impossible states after validation -> move those to test cases that fail validation
-    # TODO decide on equality behavior for each combination of possible cases -> make test cases for that
 
     type: Literal["electronic-spin"] = "electronic-spin"
 
@@ -339,7 +247,9 @@ class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
     multiplicity: PositiveInt | None = None
     n_unpaired: NonNegativeInt | None = None
 
-    is_ground_state: bool | Literal["unkown"] = "unkown"
+    # do not use bool | Literal["unknown"] because Python's implicit bool conversion
+    # could lead to unexpected behavior of if statements problems when set to "unkown"
+    state: Literal["ground-state", "excited", "unkown"] = "unkown"
     """whether this is the ground state or an excited state
 
     This field allows determining if two electronic states from different datasets are equal, even if one of them has an unkonw spin quantum number.
@@ -353,7 +263,7 @@ class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
     default value (True).
     """
 
-    @field_validator("is_ground_state")
+    @field_validator("state")
     def _warn_on_unkown_ground_state(
         cls, value: bool | Literal["unkown"]
     ) -> bool | Literal["unkown"]:
@@ -369,7 +279,7 @@ class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
     @property
     def _is_hunds_rule_applicable(self) -> bool:
         """whether Hund's rule of maximum multiplicity is applicable for this state"""
-        return self.is_ground_state is True and self.hunds_rule_in_ground_state is True
+        return self.state == "ground-state" and self.hunds_rule_in_ground_state is True
 
     @model_validator(mode="after")
     def _check_spin_fields(self) -> Self:
@@ -383,7 +293,7 @@ class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
 
     @model_validator(mode="after")
     def _apply_hunds_rule(self) -> Self:
-        if not self.hunds_rule_in_ground_state or self.is_ground_state is not True:
+        if not self._is_hunds_rule_applicable:
             # Hund's rule will not be applied
             return self
 
@@ -396,6 +306,6 @@ class _KnownElectronicSpin(RmmdFrozenBaseModel, frozen=True):
         elif self.multiplicity is not None and self.n_unpaired is not None:
             if self.multiplicity != self.n_unpaired + 1:
                 raise ValueError(
-                    f"Multiplicity {self.multiplicity} does not match n_unpaired {self.n_unpaired} according to Hund's rule."
+                    f"Multiplicity {self.multiplicity} does not match n_unpaired {self.n_unpaired} according to Hund's rule of maximum multiplicity."
                 )
         return self

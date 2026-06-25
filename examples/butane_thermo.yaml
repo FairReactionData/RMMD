@@ -12,12 +12,9 @@ entities:
     electronic_spin:
         # some information on the electronic spin has to be provided
         multiplicity: 1  # singlet
-        is_ground_state: True
-    identifiers:
-      - type: "InChI"
-        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
-      - type: "InChIKey"
-        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
+        state: ground-state
+    inchi_fixedh:
+      value: "InChI=1/C4H10/c1-3-4-2/h3-4H2,1-2H3"
     conformations: [conformations:0, conformations:1]
 thermo:
   - type: "Shomate"
@@ -45,8 +42,18 @@ thermo:
 conformations:
   - calculations: [calculations:0, calculations:2]   # ids in the calculation list
     description: "trans conformer of butane"
+    identifiers:
+      - type: "InChI"
+        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
+      - type: "InChIKey"
+        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
   - calculations: [calculations:1, calculations:3]   # ids in the calculation list
     description: "gauche conformer of butane"
+    identifiers:
+      - type: "InChI"
+        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
+      - type: "InChIKey"
+        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
 calculations:
   - type: qm-optimization+frequency
     software:

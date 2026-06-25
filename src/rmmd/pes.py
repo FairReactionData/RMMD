@@ -15,6 +15,7 @@ from pydantic import (
     model_validator,
 )
 
+from .identifiers import StringIdentifier
 from ._base import RmmdBaseModel
 from .calc import CalculationBase
 from .elements import ElementSymbol
@@ -318,6 +319,28 @@ class Conformation(RmmdBaseModel):
 
     calculations: list[CalcIndex] = Field(default_factory=list)
     """quantum chemistry calculations for this point"""
+
+    identifiers: list[StringIdentifier] = Field(
+        default_factory=list,
+    )
+    """string identifiers for the conformation, e.g., InChI, SMILES, ...
+
+    At least "InChI-fixedH" has to be provided.
+
+    .. examples::
+
+        - `{"type": "InChI", "value": "InChI=1S/CH4/h1H4"}`
+        - `{"type": "custom", "label": "AMChI",
+        "value": "AMChI=1/C5H9/c1-3-5-4-2/h3-5H,1-2H3/b5-3+,5-4+"}`
+
+    .. note::
+
+        The "custom" type is used for identifiers that do not fit into the
+        standard types. Programs that use the standard identifiers (InChI,
+        SMILES) will read fields with type "InChI" or "SMILES". So, while it is
+        possible to supply an InChI via a custom identifier, it is stronlgy
+        discouraged.
+    """
 
 
 ConformationalEnsemble = Annotated[
