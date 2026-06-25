@@ -4,7 +4,7 @@ schema_version: 0.1.0b0
 license: MIT
 species:
   C4H10:
-    name: "Butane"
+    names: ["Butane"]
     entities: [IJDNQMDRQITEOD-UHFFFAOYNA-N]
     thermo: [thermo:0, thermo:1, thermo:2]
 entities:
@@ -24,7 +24,7 @@ thermo:
     coefficients:
       - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
       - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-    fitted_to: "calculations:4"  # fittet to entry 4 in the calculations list
+    fitted_to: "calculations:6"  # fittet to entry 7 (zero-based ids) in calculations
   - type: "absolute tabular thermo"
     T: [298]
     p: [100_000]
@@ -54,6 +54,15 @@ conformations:
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
       - type: "InChIKey"
         value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
+  # saddle points as the PES can also be added (and linked to calculations)
+  - description: "trans-gauche transition state of butane"
+    calculations: [calculations:4]
+pes_relations:
+  - saddle_point: conformations:2
+    end_points:
+      - [conformations:0]
+      - [conformations:1]
+    calculations: [calculations:5]
 calculations:
   - type: qm-optimization+frequency
     software:
@@ -87,6 +96,16 @@ calculations:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_spe_gauche.log"]
+  - type: qm-ts
+    software:
+      name: "ORCA"
+      version: "5.0.3"
+    output: ["./data/butane_trans_gauche_ts.log"]
+  - type: qm-irc
+    software:
+      name: "ORCA"
+      version: "5.0.3"
+    output: ["./data/butane_trans_gauche_irc.log"]
   - type: "thermo-from QM"
     software:
       name: GoodVibes
