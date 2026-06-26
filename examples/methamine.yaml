@@ -64,17 +64,6 @@ entities:
       # TODO change spin representation as 2S is confusing
       multiplicity: 2 # doublet
       state: "ground-state"
-  TS7:
-    # transition states can also be molecular entities and thus labeled using
-    # identifiers making them findable
-    description: TS 7
-    # TODO add reaction InChI or similar until SMG identifiers are available
-    inchi_fixedh:
-        value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
-    conformations: [conformations:9]
-    electronic_spin:
-      multiplicity: 1
-      state: "ground-state"
   PRC2:
     description: PRC2
     inchi_fixedh:
@@ -139,31 +128,50 @@ entities:
       state: "ground-state"
 # Conformations and their relations describe the PES in RMMD
 conformations:
-  - description: "CH2NH minimum"
+  - description: "CH2NH"
+    type: "minimum"
     # each conformation can be linked to multiple calculations, e.g., at different
     # levels of theory
+    type:  "minimum"
     calculations: [calculations:0, calculations:1]
-  - description: "*OOH minimum"
+  - description: "*OOH"
+    type: "minimum"
     calculations: [calculations:2]
-  - description: "HOOH minimum"
+  - description: "HOOH"
+    type: "minimum"
     calculations: [calculations:3]
-  - description: "cis-HC*=NH minimum"
+  - description: "cis-HC*=NH"
+    type: "minimum"
     calculations: [calculations:4]
-  - description: "trans-HC*=NH minimum"
+  - description: "trans-HC*=NH"
+    type: "minimum"
     calculations: [calculations:5]
-  - description: "CH2N* minimum"
+  - description: "CH2N*"
+    type: "minimum"
     calculations: [calculations:6]
-  - description: "pre-reactive complex 1 - PRC1 minimum"
+  - description: "pre-reactive complex 1 - PRC1"
+    type: "minimum"
     calculations: [calculations:7]
-  - description: "PRC2 minimum"
+  - description: "PRC2"
+    type: "minimum"
     calculations: [calculations:8]
-  - description: "PRC3 minimum"
+  - description: "PRC3"
+    type: "minimum"
     calculations: [calculations:9]
   - description: "TS7"
+    identifiers:
+      # We can add identifiers to saddle points as well, but only few can really
+      # represent them. Here, the saddlepoint is described by an InChI that defines two
+      # fragments. A more suitable identifier would be AMChI
+      - type: "InChI-fixedH"
+        value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
+    type: "saddle-point"
     calculations: [calculations:10]
   - description: "TS8"
+    type: "saddle-point"
     calculations: [calculations:12]
   - description: "TS9"
+    type: "saddle-point"
 pes_relations:
   # PRC1 - TS7 - cis-CH=NH, validated by an IRC scan
   - saddle_point: conformations:9

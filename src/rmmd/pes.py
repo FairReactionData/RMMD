@@ -318,7 +318,7 @@ class Conformation(RmmdBaseModel):
     description: str | None = None
     """human-readable description of the point"""
 
-    type: Literal["minimum", "saddle-point"] | None = None
+    type: Literal["minimum", "saddle-point"]
     """type of the point on the PES"""
 
     calculations: list[CalcIndex] = Field(default_factory=list)

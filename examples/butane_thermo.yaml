@@ -42,6 +42,7 @@ thermo:
 conformations:
   - calculations: [calculations:0, calculations:2]   # ids in the calculation list
     description: "trans conformer of butane"
+    type: "minimum"
     identifiers:
       - type: "InChI"
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
@@ -49,6 +50,7 @@ conformations:
         value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
   - calculations: [calculations:1, calculations:3]   # ids in the calculation list
     description: "gauche conformer of butane"
+    type: "minimum"
     identifiers:
       - type: "InChI"
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
@@ -57,6 +59,7 @@ conformations:
   # saddle points as the PES can also be added (and linked to calculations)
   - description: "trans-gauche transition state of butane"
     calculations: [calculations:4]
+    type: "saddle-point"
 pes_relations:
   - saddle_point: conformations:2
     end_points:
