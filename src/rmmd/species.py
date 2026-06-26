@@ -137,6 +137,9 @@ class Reaction(RmmdBaseModel):
     High-level description/identification of a reaction (with a direction).
     """
 
+    type: Literal["elementary", "stepwise", "unkown"] = "unkown"
+    """type of the reaction"""
+
     description: str | None = None
     """human-readable description of the reaction"""
 
@@ -145,9 +148,6 @@ class Reaction(RmmdBaseModel):
     solvent: SpeciesName | Mixture | None = None
     catalyst: SpeciesName | None = None
 
-    transition_state: EntityKey | None = None
-    """for an elementary reaction, the transition state can be provided.
-    """
     steps: list[ReactionIndex] = Field(default_factory=list)
     """consecutive reaction steps
 
@@ -189,13 +189,20 @@ class Reaction(RmmdBaseModel):
 
     @model_validator(mode="after")
     def _elementary_reaction_check(self) -> Reaction:
-        """Check consistency between existence of steps and a transition state."""
+        """Check consistency between existence of steps and type."""
 
-        if (self.steps or self.parallel_steps) and self.transition_state:
+        if (self.steps or self.parallel_steps) and self.type == "elementary":
             raise ValueError(
-                "Reaction defines steps and a transition state, but only elementary"
-                + " reactions can have a transition state."
+                "Elementary reactions cannot have steps. If this reaction is indeed "
+                "elementary, remove the steps. If it is not elementary, set type to "
+                "'stepwise'."
             )
+
+        elif (self.steps or self.parallel_steps) and self.type == "unkown":
+            logging.getLogger(__name__).debug(
+                "Reaction defines steps, but type is 'unkown'. Setting type to 'stepwise'."
+            )
+            self.type = "stepwise"
         return self
 
 
