@@ -36,24 +36,20 @@ reactions:
   - reactants: [CH2NH, OOH]
     products: [CH2N, HOOH]
 # Entities must have unique keys and are used to uniquely identify species, preferably
-# by using canonical identifiers such as InChIs.
+# by using canonical identifiers such as InChIKeys.
 entities:
-  # TODO replace entity key pattern (currently matching InChIKeys with somethign more
-  # general, as InChI keys are not always sufficient to distinguish molecular entities
-  # anyway) -> some other PR
-  PRC1:
-    # descriptions are optional but improve human-readability
-    description: CH2NH-OOH pre-reactive complex - PRC1
+  CH2NH:
+    description: CH2NH
     # A molecular entity in RMMD is defined by its connectivity, stereochemistry, and
-    # electronic state as defined by the employed canonical identifiers.
+    # electronic state as defined by the InChI-fixedH and the electronic_spin property
     inchi_fixedh:
-        value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
+        value: "InChI=1/CH3N/c1-2/h2H,1H2"
     # Each molecular entity can be assigned several conformations on its PES. This list
     # contains the known conformations. In general, it is not meant to be an exhaustive
     # list of all possible conformations
-    conformations: [conformations:6]
+    conformations: [conformations:0]
     electronic_spin:
-      multiplicity: 1 # singlet
+      multiplicity: 1
       state: "ground-state"
   CH2N:
     description: CH2N*
@@ -61,8 +57,25 @@ entities:
         value: "InChI=1/CH2N/c1-2/h1H2"
     conformations: [conformations:5]
     electronic_spin:
-      # TODO change spin representation as 2S is confusing
       multiplicity: 2 # doublet
+      state: "ground-state"
+  PRC1:
+    # descriptions are optional but improve human-readability
+    description: CH2NH-OOH pre-reactive complex - PRC1
+    conformations: [conformations:6]
+    # Sometimes, the employed canoncial identifier is not sufficient to distinguish
+    # molecular entities. Here, different pre-reactive complexes have to be 
+    # distinguished as they lead to different products. In such a case, one can add
+    # the defining_conformations field which, unlike the conformations field, will
+    # contain all possible conformations of a molecular entity by definition.
+    defining_conformations: [conformations:6]
+    # If defining_conformations does not have its default value, the supplied InChI
+    # will not uniquely identify the entity anymore and no canonical identification 
+    # of the entity is possible. Here, all pre-reactive complexes share an InChI.
+    inchi_fixedh:
+        value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
+    electronic_spin:
+      multiplicity: 1 # singlet
       state: "ground-state"
   PRC2:
     description: PRC2
@@ -72,6 +85,7 @@ entities:
     electronic_spin:
       multiplicity: 1
       state: "ground-state"
+    defining_conformations: [conformations:7]
   cis-HC=NH:
     description: cis-HC*=NH
     inchi_fixedh:
@@ -80,11 +94,8 @@ entities:
       multiplicity: 2 # doublet
       state: "ground-state"
     conformations: [conformations:3]
-    # Sometimes, the employed canoncial identifier is not sufficient to distinguish
-    # molecular entities. Here, for example, InChI cannot distinguish the cis-trans-
-    # isomerism of this radical. In such a case, one can add the defining_conformations
-    # field which unlike the conformations field will contain all possible conformations
-    # and
+    # Here, for example, InChI cannot distinguish the cis-trans-
+    # isomerism of this radical. 
     defining_conformations: [conformations:3]
   trans-HC=NH:
     inchi_fixedh:
@@ -94,20 +105,15 @@ entities:
     electronic_spin:
       multiplicity: 2 # doublet
       state: "ground-state"
-  CH2NH:
-    description: CH2NH
-    inchi_fixedh:
-        value: "InChI=1/CH3N/c1-2/h2H,1H2"
-    conformations: [conformations:0]
-    electronic_spin:
-      multiplicity: 1
-      state: "ground-state"
   HOOH:
     description: HOOH
     inchi_fixedh:
         value: "InChI=1/H2O2/c1-2/h1-2H"
     conformations: [conformations:2]
     electronic_spin:
+      # For a ground state, the number of unpaired electrons will be computed 
+      # automatically and does not have to be explicitly supplied.
+      # n_unpaired: 0
       multiplicity: 1
       state: "ground-state"
   OOH:
@@ -126,6 +132,7 @@ entities:
     electronic_spin:
       multiplicity: 1
       state: "ground-state"
+    defining_conformations: [conformations:8]
 # Conformations and their relations describe the PES in RMMD
 conformations:
   - description: "CH2NH"
