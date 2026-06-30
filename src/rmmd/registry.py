@@ -12,6 +12,7 @@ import itertools
 from typing import ClassVar, Generic, Self, TypeVar
 
 from pydantic import Field, RootModel, model_serializer, model_validator
+from .keys import RegistryKey
 
 from ._base import RmmdBaseModel
 
@@ -23,7 +24,7 @@ class HasKeyMixin(RmmdBaseModel):
     The field is excluded from serialization to avoid redundancy.
     """
 
-    key: str | None = Field(exclude=True, default=None)
+    key: RegistryKey | None = Field(exclude=True, default=None)
 
 
 T = TypeVar("T", bound=HasKeyMixin)
@@ -66,7 +67,7 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
     # MutableMapping ABC
     ##########################################################################
 
-    def __getitem__(self, key: str) -> T:
+    def __getitem__(self, key: RegistryKey) -> T:
         return self.root[key]
 
     def __iter__(self):
@@ -75,15 +76,15 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
     def __len__(self) -> int:
         return len(self.root)
 
-    def __delitem__(self, key: str) -> None:
+    def __delitem__(self, key: RegistryKey) -> None:
         del self.root[key]
 
     def __contains__(self, key: object) -> bool:
         return key in self.root
 
-    def __setitem__(self, key: str, value: T) -> None:
+    def __setitem__(self, key: RegistryKey, value: T) -> None:
         if value.key is None:
-            value.key = key
+            object.__setattr__(value, "key", key)
         elif value.key != key:
             raise ValueError(
                 f"key mismatch: mapping key '{key}' does not match "
@@ -109,7 +110,7 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
         entry with the same key is overwritten.
         """
         if value.key is None:
-            value.key = self._next_key()
+            object.__setattr__(value, "key", self._next_key())
         self[value.key] = value
         return value.key
 
@@ -124,7 +125,7 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
 
         for key, value in self.root.items():
             if value.key is None:
-                value.key = key
+                object.__setattr__(value, "key", key)
             elif value.key != key:
                 mismatched.append((key, value.key))
 

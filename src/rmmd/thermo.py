@@ -10,9 +10,10 @@ from pydantic import model_validator
 from ._base import RmmdBaseModel
 from .calc import CalculationBase
 from .keys import CalcIndex, CitationKey, ConformationIndex, SpeciesName, ThermoIndex
+from .registry import HasKeyMixin
 
 
-class _ThermoPropertyBase(RmmdBaseModel):
+class _ThermoPropertyBase(HasKeyMixin):
     """Base class for thermochemical properties"""
 
     type: str

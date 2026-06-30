@@ -23,6 +23,7 @@ from .calc import CalculationBase, OutputOf
 from .elements import ElementSymbol
 from .identifiers import StringIdentifier
 from .keys import CalcIndex, ConformationIndex
+from .registry import HasKeyMixin
 
 
 class ElectronicState(RmmdFrozenBaseModel, frozen=True):
@@ -300,7 +301,7 @@ one may still reference a public dataset, but this is not required.
 ###############################################################################
 
 
-class Conformation(RmmdBaseModel):
+class Conformation(HasKeyMixin):
     """ "The spatial arrangement of the atoms affording distinction between
     stereoisomers which can be interconverted by rotations about formally
     single bonds." - IUPAC Goldbook, https://doi.org/10.1351/goldbook.C01258
@@ -399,7 +400,7 @@ pair is automatically sorted to simplify comparison in Python code.
 
 
 # private base class to avoid confusion with Relation TypeAlias below
-class _RelationBase(RmmdFrozenBaseModel, frozen=True):
+class _RelationBase(HasKeyMixin, RmmdFrozenBaseModel, frozen=True):
     calculations: list[CalcIndex] = Field(default_factory=list)
     """calculations used to confirm this relation.
 

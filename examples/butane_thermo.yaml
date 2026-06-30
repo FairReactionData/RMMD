@@ -19,7 +19,8 @@ entities:
       value: "InChI=1/C4H10/c1-3-4-2/h3-4H2,1-2H3"
     conformations: [conformations:0, conformations:1]
 thermo:
-  - type: "Shomate"
+  thermo:0:
+    type: "Shomate"
     T_ranges:
       - [298.15, 1000]
       - [1000, 5000]
@@ -27,7 +28,8 @@ thermo:
       - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
       - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
     fitted_to: "calculations:6"  # fittet to entry 7 (zero-based ids) in calculations
-  - type: "absolute tabular thermo"
+  thermo:1:
+    type: "absolute tabular thermo"
     T: [298]
     p: [100_000]
     H: [[125.6]]
@@ -36,13 +38,15 @@ thermo:
       T: 298.15    # are using standard enthalpies of formation
       p: 100_000
       element_reference: "most stable form"
-  - type: "tabular thermo"
+  thermo:2:
+    type: "tabular thermo"
     T: [50, 100, 150, 298.15]
     p: [100_000]
     Cp: [[38.07, 55.35, 67.32, 98.49]]
     sources: [chen-1975]
 conformations:
-  - calculations: [calculations:0, calculations:2]   # ids in the calculation list
+  conformations:0:
+    calculations: [calculations:0, calculations:2]   # ids in the calculation list
     description: "trans conformer of butane"
     type: "minimum"
     identifiers:
@@ -50,7 +54,8 @@ conformations:
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
       - type: "InChIKey"
         value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
-  - calculations: [calculations:1, calculations:3]   # ids in the calculation list
+  conformations:1:
+    calculations: [calculations:1, calculations:3]   # ids in the calculation list
     description: "gauche conformer of butane"
     type: "minimum"
     identifiers:
@@ -59,17 +64,20 @@ conformations:
       - type: "InChIKey"
         value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
   # saddle points as the PES can also be added (and linked to calculations)
-  - description: "trans-gauche transition state of butane"
+  conformations:2:
+    description: "trans-gauche transition state of butane"
     calculations: [calculations:4]
     type: "saddle-point"
 pes_relations:
-  - saddle_point: conformations:2
+  pes_relations:0:
+    saddle_point: conformations:2
     end_points:
       - [conformations:0]
       - [conformations:1]
     calculations: [calculations:5]
 calculations:
-  - type: qm-optimization+frequency
+  calculations:0:
+    type: qm-optimization+frequency
     software:
       name: "ORCA"
       version: "5.0.3"
@@ -77,7 +85,8 @@ calculations:
       level_of_theory: "B3LYP-D3BJ/def2-TZVP"
       electronic_state: {charge: 0, multiplicity: 1}
     output: ["./data/butane_opt_trans.log"]
-  - type: qm-optimization+frequency
+  calculations:1:
+    type: qm-optimization+frequency
     input:
       level_of_theory: "B3LYP-D3BJ/def2-TZVP"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -85,7 +94,8 @@ calculations:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_opt_gauche.log"]
-  - type: qm-energy
+  calculations:2:
+    type: qm-energy
     input:
       level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -93,7 +103,8 @@ calculations:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_spe_trans.log"]
-  - type: qm-energy
+  calculations:3:
+    type: qm-energy
     input:
       level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -101,17 +112,20 @@ calculations:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_spe_gauche.log"]
-  - type: qm-ts
+  calculations:4:
+    type: qm-ts
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_trans_gauche_ts.log"]
-  - type: qm-irc
+  calculations:5:
+    type: qm-irc
     software:
       name: "ORCA"
       version: "5.0.3"
     output: ["./data/butane_trans_gauche_irc.log"]
-  - type: "thermo-from QM"
+  calculations:6:
+    type: "thermo-from QM"
     software:
       name: GoodVibes
       version: "3.2"

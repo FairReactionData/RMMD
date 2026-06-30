@@ -16,14 +16,17 @@ species:
   CO2:
     entities: [CURLTUGMZLYLDI-UHFFFAOYSA-N]
 reactions:
-  - reactants: [NO2, CO]
+  reactions:0:
+    reactants: [NO2, CO]
     products: ["NO", CO2]
     # this overall reaction proceeds via two elementary steps defined below
     steps: [reactions:1, reactions:2]
-  - reactants: [NO2, NO2]
+  reactions:1:
+    reactants: [NO2, NO2]
     products: [NO3, "NO"]
     description: "Elementary step 1: NO2 + NO2 -> NO3 + NO"
-  - reactants: [NO3, CO]
+  reactions:2:
+    reactants: [NO3, CO]
     products: [NO2, CO2]
     description: "Elementary step 2: NO3 + CO -> NO2 + CO2"
 entities:
