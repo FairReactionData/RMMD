@@ -11,7 +11,7 @@ from collections.abc import MutableMapping
 import itertools
 from typing import ClassVar, Generic, Self, TypeVar
 
-from pydantic import Field, RootModel, model_serializer, model_validator
+from pydantic import Field, RootModel, model_validator
 from .keys import RegistryKey
 
 from ._base import RmmdBaseModel
@@ -114,6 +114,9 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
         self[value.key] = value
         return value.key
 
+    def __str__(self) -> str:
+        return str(self.root)
+
     ##########################################################################
     # Pydantic hooks
     ##########################################################################
@@ -136,11 +139,3 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
             raise ValueError(f"key mismatch: {details}")
 
         return self
-
-    @model_serializer(mode="plain")
-    def _serialize(self):
-        """Serialize as a plain dict so the mapping round-trips without a wrapper."""
-        return self.root
-
-    def __str__(self) -> str:
-        return str(self.root)
