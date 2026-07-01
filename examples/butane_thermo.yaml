@@ -1,7 +1,9 @@
 # This file shows how the conformers of butane can be described in RMMD.
 # It also shows how to link thermochemistry data to the conformers.
 schema_version: 0.1.0b0
-license: MIT
+metadata:
+  title: mock data for butane
+  license: MIT
 species:
   C4H10:
     names: ["Butane"]
@@ -131,6 +133,7 @@ calculations:
     output: Null   # here, we could reference tabular thermodynamic data in the thermo list
 literature:
   pittam-1972:
+    type: article
     title: "Measurements of heats of combustion by flame calorimetry. Part 8.—Methane, ethane, propane, n-butane and 2-methylpropane"
     authors:
       - given-names: "D. A."
@@ -138,8 +141,9 @@ literature:
       - given-names: "G."
         family-names: "Pilcher"
     year: 1972
-    doi: https://doi.org/10.1039/F19726802224
+    doi: 10.1039/F19726802224
   chen-1975:
+    type: article
     title: "Ideal gas thermodynamic properties and isomerization of n-butane and isobutane"
     authors:
       - given-names: "S. S."
@@ -149,4 +153,4 @@ literature:
       - given-names: "B. J."
         family-names: "Zwolinski"
     year: 1975
-    doi: https://doi.org/10.1063/1.555526
+    doi: 10.1063/1.555526

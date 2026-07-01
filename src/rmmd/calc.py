@@ -5,7 +5,7 @@ from annotated_types import MinLen
 
 from ._base import RmmdBaseModel
 from .keys import CalcIndex
-from .metadata import CitationKeyOrDirectReference, HttpUrlReference
+from .metadata import CitationKeyOrDirectReference, UrlNoDoiOrg
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
@@ -18,7 +18,7 @@ class Software(RmmdBaseModel):
     """name of the software"""
     version: Annotated[str, MinLen(1)]
     """version number or Git hash of the software used for the calculation"""
-    repository: HttpUrlReference | None = None
+    repository: UrlNoDoiOrg | None = None
     """URL to the software repository, e.g., GitHub or GitLab"""
 
 

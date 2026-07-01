@@ -2,87 +2,62 @@
 Citation-related metadata
 """
 
-from typing import Annotated
+from __future__ import annotations
 
+from datetime import date
+from typing import Annotated, Self, TypeAlias
+
+from annotated_types import MinLen
 from pydantic import (
-    AfterValidator,
     AnyUrl,
     Discriminator,
     Field,
-    PositiveInt,
     Tag,
     UrlConstraints,
+    model_validator,
 )
 
 from ._base import RmmdBaseModel
 from .keys import CitationKey
+from .cff.cff_1_2_0 import Doi as CffDoi
+from .cff.cff_1_2_0 import Entity, License, Person, Reference
 
-# Note: In order to use CitationKeyOrDirectReference (below), any direct
-# reference needs to be distinguishable from a citation key, i.e., it must not
-# match the pattern of a citation key!
-
-Doi = Annotated[
-    str,
-    Field(
-        description="Digital Object Identifier (DOI)",
-        pattern=r"^https:\/\/doi\.org\/10\.\d{4,}/.*",
-    ),
-]
+Doi: TypeAlias = CffDoi
 """Digital Object Identifier (DOI) for a publication or dataset.
 
-DOIs should always be supplied as full URLs. This allows for easy resolution
-and ensures consistency in how DOIs are represented."""
-
-HandleNet = Annotated[
-    str,
-    Field(
-        description="HandleNet identifier for a publication or dataset.",
-        pattern=r"^https:\/\/hdl\.handle\.net\/(?:1(?:[^0].*|0[^.].*)|[^1].*)\/.*",
-    ),
-]
-"""HandleNet identifier for a publication or dataset represented as URL.
-
-While DOIs are technically a subset of HandleNet identifiers, they should use
-the doi.org domain to keep consistency.
+DOIs should always be supplied in the form prefix/suffix to ensure consistency in how
+DOIs are represented.
 """
 
 
-def check_if_consistent_doi_or_handle(url: AnyUrl) -> AnyUrl:
-    """Ensure that the URL is not an invalid (i.e. non-consistent)
-    HandleNet identifier or DOI."""
-
-    # try to catch some common "mistakes" to ensure consistency in how DOIs
-    # and HandleNet identifiers are represented
-    if url.host == "www.doi.org":
-        raise ValueError("DOIs should follow the format https://doi.org/10.xxxx/... ")
-    elif url.host == "doi.org" and url.scheme != "https":
-        raise ValueError("DOIs should be provided as full URLs starting with https")
-    elif url.host == "hdl.handle.net" and url.scheme != "https":
-        raise ValueError(
-            "HandleNet identifiers should be provided as full URLs "
-            "starting with https://hdl.handle.net/..."
-        )
-
-    return url
-
-
-class _HttpUrlHostRequired(AnyUrl):
-    """HTTP URL with a required host."""
+# The pydantic CFF Url is just AnyUrl (althought in the JSON schema, only http(s) and
+# (s)ftp are allowed. Here, we also require a host allowing us to check for DOIs which
+# should not be supplied as URLs. Relevant b/c there is a union of Url and Doi below
+class UrlNoDoiOrg(AnyUrl):
+    """http or https URL, but not allowing www.doi.org or doi.org URLs."""
 
     _constraints = UrlConstraints(
-        allowed_schemes=["http", "https"],
+        # URL schemes allowed by CFF 1.2.0
+        allowed_schemes=["http", "https", "ftp", "sftp"],
+        max_length=2083,
+        # host required, other constraints same as pydantic.HttpUrl
         host_required=True,
     )
 
+    @model_validator(mode="after")
+    def check_if_consistent_doi_or_handle(self) -> Self:
+        """Ensure that the URL is not an invalid (i.e. non-consistent)
+        HandleNet identifier or DOI."""
 
-HttpUrlReference = Annotated[
-    _HttpUrlHostRequired, AfterValidator(check_if_consistent_doi_or_handle)
-]
-"""HTTP URL for a publication or dataset.
+        # try to catch some common "mistakes" to ensure consistency in how DOIs
+        # and HandleNet identifiers are represented
+        # We use the citation file format representation of DOIs
+        if self.host in ("www.doi.org", "doi.org"):
+            raise ValueError(
+                "DOIs be provided as prefix/suffix not as www.doi.org URLs"
+            )
 
-This is used for references that are not DOIs or HandleNet identifiers,
-such as web pages or other online resources.
-"""
+        return self
 
 
 LocalFile = Annotated[
@@ -96,101 +71,77 @@ LocalFile = Annotated[
 The reference is given as a Posix-style path relative to the RMMD file,
 starting with './'."""
 
-
-_Orcid = Annotated[
-    str, Field(pattern=r"^https:\/\/orcid\.org\/\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
+LocalCffFile = Annotated[
+    LocalFile,
+    Field(
+        examples=["./CITATION.cff"],
+        pattern=r"^\.\/(.*\/)?CITATION\.cff$",
+    ),
 ]
+"""Reference to a local CITATION.cff file in the same dataset as the RMMD file.
+
+The reference is given as a Posix-style path relative to the RMMD file,
+starting with './' and ending with 'CITATION.cff'.
+"""
 
 
-class _Person(RmmdBaseModel):
-    """Person involved in a citation, e.g., an author or editor.
+class Metadata(RmmdBaseModel):
+    """Metadata for the dataset, e.g., authors, title, description, etc.
 
-    cf. definitionperson in CFF schema"""
-
-    family_names: Annotated[str, Field(min_length=1, validation_alias="family-names")]
-    """full name of the person"""
-    given_names: Annotated[str, Field(min_length=1, validation_alias="given-names")]
-    """full name of the person"""
-    name_particle: (
-        Annotated[str, Field(min_length=1, validation_alias="name-particle")] | None
-    ) = None
-    """name particle, e.g., "van" in "Ludwig van Beethoven"
+    This structure is very close to a CITATION.CFF file to allow for easy conversion.
     """
-    name_suffix: (
-        Annotated[str, Field(min_length=1, validation_alias="name-suffix")] | None
-    ) = None
-    """name suffix, e.g., "Jr." in "Martin Luther King Jr."
+
+    license: License
+    """license of this dataset"""
+    authors: list[Person | Entity] = Field(default_factory=list)
+    """authors of the dataset"""
+    title: Annotated[str, MinLen(1)]
+    """name of the dataset"""
+    description: Annotated[str, MinLen(1)] | None = None
+    """description or abstract of the dataset, e.g., how it was obtained, what it contains, ..."""
+    keywords: list[str] = Field(default_factory=list)
+    """keywords for the dataset"""
+    version: Annotated[str, MinLen(1)] | None = None
+    """version of the dataset"""
+    date_released: date | None = None
+    """date when the dataset was released"""
+    identifiers: list[str] | None = None
+    """identifiers for the dataset, e.g., DOI."""
+    preferred_citation: Reference | None = None
+    """how this dataset should be cited"""
+    references: list[CitationKeyOrDirectReference] | None = None
+    """literature describing this dataset, typically the paper(s) associated with the
+    dataset.
     """
-    affiliation: Annotated[str, Field(min_length=1)] | None = None
-    """affiliation of the person"""
-    orcid: _Orcid | None = None
-    """ORCID identifier for the citation, if applicable"""
-
-
-class _Entity(RmmdBaseModel):
-    """Entity involved in a citation, e.g., an organization or institution."""
-
-    name: Annotated[str, Field(min_length=1)]
-    """name of the entity"""
-    address: Annotated[str, Field(min_length=1)] | None = None
-    """address of the entity"""
-    city: Annotated[str, Field(min_length=1)] | None = None
-    """city of the entity"""
-    country: Annotated[str, Field(min_length=1)] | None = None
-    """country of the entity"""
-    orcid: _Orcid | None = None
-    """ORCID identifier for the entity, if applicable"""
-
-
-class Citation(RmmdBaseModel):
-    """Classic citation/reference using author, title, journal, etc."""
-
-    title: Annotated[str, Field(min_length=1)]
-
-    # TODO adapt from CFF, datacite, ...; do not reinvent the wheel
-    authors: list[_Person | _Entity]
-    year: PositiveInt
-    doi: Doi | None = None
-    url: HttpUrlReference | None = None
-
-
-Reference = Doi | HttpUrlReference | Citation
-"""Reference to a publication or dataset."""
 
 
 def _direct_reference_discriminator(v) -> str | None:
     """Discriminator function for direct references."""
     v = str(v)  # ensure v is a string (e.g., for AnyUrl)
 
-    if v.startswith("https://doi.org"):
+    if v.startswith("10.") and "/" in v:  # a citation key cannot contain /
         return "Doi"
-    elif v.startswith("https://hdl.handle.net/"):
-        return "HandleNet"
     elif v.startswith("http://") or v.startswith("https://"):
-        return "HttpUrlReference"
+        return "HttpUrlHostRequired"
     elif v.startswith("./"):
         return "LocalFile"
     else:
-        return None
+        return "CitationKey"
 
 
-DirectReference = Annotated[
+CitationKeyOrDirectReference = Annotated[
     Annotated[Doi, Tag("Doi")]
-    | Annotated[HandleNet, Tag("HandleNet")]
-    | Annotated[HttpUrlReference, Tag("HttpUrlReference")]
-    | Annotated[LocalFile, Tag("LocalFile")],
+    | Annotated[UrlNoDoiOrg, Tag("HttpUrlHostRequired")]
+    | Annotated[LocalFile, Tag("LocalFile")]
+    | Annotated[CitationKey, Tag("CitationKey")],
     Discriminator(
         _direct_reference_discriminator,
         custom_error_type="illegal_direct_reference",
         custom_error_message="Could not determine the type of direct "
         "reference. Valid direct references include DOIs,"
-        " HandleNet identifiers, HTTP URLs, or relative"
-        " file paths.",
+        " HTTP URLs, relative file paths, or citation keys.",
     ),
 ]
-"""Types of references that are strings and can be used directly in the
-schema without adding a reference item to the literature table and using its citation key."""
-
-CitationKeyOrDirectReference = DirectReference | CitationKey
-"""String type that either identifies a reference directly or is a key to the
-literature table in the schema."""
+"""String that either identifies a resource directly (e.g. a URL string) or is a key to
+the literature table in the schema.
+"""

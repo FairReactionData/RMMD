@@ -7,7 +7,7 @@ from ._base import RmmdBaseModel
 from .calc import NestedCalculation
 from .keys import CitationKey, EntityKey, SpeciesName
 from .kinetics import RateCoefficient
-from .metadata import Citation, CitationKeyOrDirectReference, Reference
+from .metadata import Doi, LocalCffFile, Metadata, Reference
 from .pes import Conformation, ConformationRelation, QmCalculation
 from .species import MolecularEntity, Reaction, Species, TransportProperty
 from .thermo import (
@@ -63,17 +63,14 @@ class Schema(RmmdBaseModel, extra="forbid"):
     ### metadata ###
     schema_version: Literal["0.1.0b0"] = "0.1.0b0"
     """version of the schema used"""
-    license: str
-    """license of this dataset"""
-    description: str | None = None
-    """description of the dataset, e.g., how it was obtained, what it contains, ..."""
+    metadata: LocalCffFile | Metadata
+    """dataset metadata
 
-    preferred_citation: Citation | None = None
-    """how this dataset should be cited"""
-    references: list[CitationKeyOrDirectReference] | None = None
-    """literature describing this dataset, typically the paper(s) associated with the
-    dataset."""
-    literature: dict[CitationKey, Reference] = Field(default_factory=dict)
+    Can be supplied directly in the RMMD file or by referencing another metadata file
+    such as a CITATION.CFF
+    """
+
+    literature: dict[CitationKey, Doi | Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""
 
 

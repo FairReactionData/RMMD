@@ -1,15 +1,18 @@
 schema_version: 0.1.0b0
-license: MIT
-description: 'This example demonstrates how RMMD can distinguish species that the
-  employed identifier (here InChI) cannot distinguish by assigning
-  defining_conformations. Additionally, the example demonstrated how a reaction can link
-  species on the "mechnism level" while individual conformations can be related to each
-  other on the "PES level". The qualitative, partial PES shown here was taken from
-  ali2016 (cf. Figure 4 in that publication).'
+metadata:
+  title: Methamine example data
+  license: MIT
+  description: >-
+   This example demonstrates how RMMD can distinguish species that the employed identifier
+    (here InChI) cannot distinguish by assigning defining_conformations. Additionally,
+    the example demonstrated how a reaction can link species on the "mechnism level"
+    while individual conformations can be related to each other on the "PES level". The
+    qualitative, partial PES shown here was taken from ali2016 (cf. Figure 4 in that
+    publication).
 # the literature list contains the references used in this dataset. To indicate
 # that a citation belongs to/describes this dataset, use the "references" list.
 literature:
-  ali2016: https://doi.org/10.1021/acs.jpca.6b06531
+  ali2016: 10.1021/acs.jpca.6b06531
 # Species and Reactions represent the "mechanism layer" of RMMD
 species:
   # Species can be assigned (almost) arbitrary names like in a CHEMKIN file. The
