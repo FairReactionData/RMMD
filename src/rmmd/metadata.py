@@ -121,7 +121,12 @@ def _direct_reference_discriminator(v) -> str | None:
 
     if v.startswith("10.") and "/" in v:  # a citation key cannot contain /
         return "Doi"
-    elif v.startswith("http://") or v.startswith("https://"):
+    elif (
+        v.startswith("http://")
+        or v.startswith("https://")
+        or v.startswith("ftp://")
+        or v.startswith("sftp://")
+    ):
         return "HttpUrlHostRequired"
     elif v.startswith("./"):
         return "LocalFile"
