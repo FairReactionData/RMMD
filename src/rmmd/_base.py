@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict
 
 RMMD_DEFAULT_CONFIG = ConfigDict(
     extra="forbid",
+    use_attribute_docstrings=True,
 )
 """default configuration for all RMMD data models."""
 
