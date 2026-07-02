@@ -19,7 +19,7 @@ from pydantic import (
 )
 
 from ._base import RmmdBaseModel, RmmdFrozenBaseModel
-from .calc import CalculationBase, OutputOf
+from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase, OutputOf
 from .elements import ElementSymbol
 from .identifiers import StringIdentifier
 from .keys import CalcIndex, ConformationIndex
@@ -125,7 +125,7 @@ involved
 """
 
 
-class _QmInput(RmmdBaseModel):
+class _QmInput(CalculationInputBase):
     """input data for a quantum chemistry calculation"""
 
     level_of_theory: LevelOfTheory
@@ -148,12 +148,12 @@ class _QmOptInput(_QmInput):
     """initial geometry for the optimization."""
 
 
-class _QmOptData(RmmdBaseModel):
+class _QmOptData(CalculationOutputBase):
     """Data from a geometry optimization calculation"""
 
-    geometry: Geometry
+    geometry: Geometry | None = None
     """geometry of the optimized structure"""
-    total_electronic_energy: float
+    total_electronic_energy: float | None = None
     """total electronic energy in Hartree"""
     gradient: list[tuple[float, float, float]] | None = None
     """gradient of the energy w.r.t. the coordinates [Hartree/Å]"""
@@ -181,12 +181,12 @@ class _QmScanInput(_QmInput):
     """constraints on the internal coordinates during a relaxed scan"""
 
 
-class _QmScanData(RmmdBaseModel):
+class _QmScanData(CalculationOutputBase):
     """data from a dihedral angle scan"""
 
-    geometries: Geometries
+    geometries: Geometries | None = None
     """geometries of the scan"""
-    total_electronic_energies: list[float]
+    total_electronic_energies: list[float] | None = None
     """total electronic energy in Hartree"""
 
     # TODO add steps, boundary, etc.
@@ -199,12 +199,12 @@ class QmScan(CalculationBase[_QmScanInput, _QmScanData]):
     """type of the calculation"""
 
 
-class _QmFreqData(RmmdBaseModel):
+class _QmFreqData(CalculationOutputBase):
     """Data from a frequency calculation"""
 
-    frequencies: list[float]
+    frequencies: list[float] | None = None
     """frequencies in cm^-1"""
-    total_electronic_energy: float
+    total_electronic_energy: float | None = None
     """total electronic energy in Hartree"""
     rot_symmetry_nr: int | None = None
     """rotational symmetry number"""
@@ -232,10 +232,10 @@ class QmOptFreqCalc(CalculationBase[_QmInput, _QmOptFreqData]):
     )
 
 
-class _QmEnergyData(RmmdBaseModel):
+class _QmEnergyData(CalculationOutputBase):
     """Data from a single-point energy calculation"""
 
-    total_electronic_energy: float
+    total_electronic_energy: float | None = None
     """total electronic energy in Hartree"""
 
 
@@ -259,19 +259,20 @@ class QmIrcScanInput(_QmInput):
     """reference to the transition state optimization"""
 
 
-class _QmIrcScanData(RmmdBaseModel):
+class _QmIrcScanData(CalculationOutputBase):
     """Data from an intrinsic reaction coordinate scan in a single direction"""
 
-    points: Geometries
+    points: Geometries | None = None
     """geometries along the IRC path (inlcuding the transition state)"""
-    total_electronic_energies: list[float]
+    total_electronic_energies: list[float] | None = None
     """list of total electronic energies in Hartree for each point in the IRC path"""
 
     @model_validator(mode="after")
     def check_n_points(self):
         """check that the number of points matches the number of energies"""
-        if len(self.points.coordinates) != len(self.total_electronic_energies):
-            raise ValueError("Number of points and energies must match")
+        if self.points is not None and self.total_electronic_energies is not None:
+            if len(self.points.coordinates) != len(self.total_electronic_energies):
+                raise ValueError("Number of points and energies must match")
         return self
 
 

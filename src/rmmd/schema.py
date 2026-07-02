@@ -4,7 +4,7 @@ from typing import Annotated, Literal, TypeAlias
 from pydantic import Field
 
 from ._base import RmmdBaseModel
-from .calc import NestedCalculation
+from .calc import GeneralCalculation, NestedCalculation
 from .keys import CitationKey
 from .kinetics import RateCoefficient
 from .metadata import Doi, LocalCffFile, Metadata, Reference
@@ -16,6 +16,7 @@ from .thermo import (
     EmpiricalThermo,
     ReferenceState,
     TabularThermo,
+    ThermoParameterFitting,
     ThermoQmCalc,
 )
 
@@ -25,7 +26,11 @@ _ThermoItem: TypeAlias = Annotated[
 ]
 
 _CalculationItem: TypeAlias = Annotated[
-    QmCalculation | ThermoQmCalc | NestedCalculation,
+    QmCalculation
+    | ThermoQmCalc
+    | NestedCalculation
+    | GeneralCalculation
+    | ThermoParameterFitting,
     Field(discriminator="type"),
 ]
 

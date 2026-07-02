@@ -242,7 +242,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ch2nh_opt.log"]
+    output:
+      sources: ["./data/ch2nh_opt.log"]
   calculations:1:
     type: qm-energy
     input:
@@ -251,7 +252,8 @@ calculations:
     software:
       name: "ORCA"
       version: "6.0.1"
-    output: ["./data/ch2nh_energy.log"]
+    output:
+      sources: ["./data/ch2nh_energy.log"]
   calculations:2:
     type: qm-optimization
     input:
@@ -260,7 +262,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ooh_opt.log"]
+    output:
+      sources: ["./data/ooh_opt.log"]
   calculations:3:
     type: qm-optimization
     input:
@@ -269,7 +272,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/hooh_opt.log"]
+    output:
+      sources: ["./data/hooh_opt.log"]
   calculations:4:
     type: qm-optimization
     input:
@@ -278,7 +282,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ch_nh1_opt.log"]
+    output:
+      sources: ["./data/ch_nh1_opt.log"]
   calculations:5:
     type: qm-optimization
     input:
@@ -287,7 +292,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ch_nh2_opt.log"]
+    output:
+      sources: ["./data/ch_nh2_opt.log"]
   calculations:6:
     type: qm-optimization
     input:
@@ -296,31 +302,36 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ch2n_opt.log"]
+    output:
+      sources: ["./data/ch2n_opt.log"]
   calculations:7:
     type: qm-optimization  # optimization of the pre-reactive complex (PRC1)
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/prc1_opt.log"]
+    output:
+      sources: ["./data/prc1_opt.log"]
   calculations:8:
     type: qm-optimization  # PRC2
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/prc2_opt.log"]
+    output:
+      sources: ["./data/prc2_opt.log"]
   calculations:9:
     type: qm-optimization  # PRC3
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/prc3_opt.log"]
+    output:
+      sources: ["./data/prc3_opt.log"]
   calculations:10:
     type: qm-ts
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ts7.log"]
+    output:
+      sources: ["./data/ts7.log"]
   calculations:11:
     type: qm-irc
     software:
@@ -332,7 +343,8 @@ calculations:
       scan_type: "both"
       # saddle point found by calculation 10 is used as starting point
       ts: {output_of: calculations:10}
-    output: ["./data/irc1"]
+    output:
+      sources: ["./data/irc1"]
   calculations:12:
     type: qm-ts
     input:
@@ -341,7 +353,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ts8.log"]
+    output:
+      sources: ["./data/ts8.log"]
   calculations:13:
     type: qm-irc
     software:
@@ -351,7 +364,8 @@ calculations:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "forward"
-    output: ["./data/irc8_forward.log"]
+    output:
+      sources: ["./data/irc8_forward.log"]
   calculations:14:
     type: qm-irc
     software:
@@ -361,7 +375,8 @@ calculations:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "reverse"
-    output: ["./data/irc8_reverse.log"]
+    output:
+      sources: ["./data/irc8_reverse.log"]
   calculations:15:
     type: qm-ts
     input:
@@ -370,7 +385,8 @@ calculations:
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
-    output: ["./data/ts9.log"]
+    output:
+      sources: ["./data/ts9.log"]
   calculations:16:
     type: qm-scan
     input:

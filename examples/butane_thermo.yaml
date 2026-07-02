@@ -27,8 +27,6 @@ thermo:
     coefficients:
       - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
       - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-    fitted_to:
-      output_of: ["calculations:6"]  # fittet to entry 7 (zero-based ids) in calculations
   thermo:1:
     type: "absolute tabular thermo"
     T: [298]
@@ -85,7 +83,8 @@ calculations:
     input:
       level_of_theory: "B3LYP-D3BJ/def2-TZVP"
       electronic_state: {charge: 0, multiplicity: 1}
-    output: ["./data/butane_opt_trans.log"]
+    output:
+      sources: ["./data/butane_opt_trans.log"]
   calculations:1:
     type: qm-optimization+frequency
     input:
@@ -94,7 +93,8 @@ calculations:
     software:
       name: "ORCA"
       version: "5.0.3"
-    output: ["./data/butane_opt_gauche.log"]
+    output:
+      sources: ["./data/butane_opt_gauche.log"]
   calculations:2:
     type: qm-energy
     input:
@@ -103,7 +103,8 @@ calculations:
     software:
       name: "ORCA"
       version: "5.0.3"
-    output: ["./data/butane_spe_trans.log"]
+    output:
+      sources: ["./data/butane_spe_trans.log"]
   calculations:3:
     type: qm-energy
     input:
@@ -112,19 +113,22 @@ calculations:
     software:
       name: "ORCA"
       version: "5.0.3"
-    output: ["./data/butane_spe_gauche.log"]
+    output:
+      sources: ["./data/butane_spe_gauche.log"]
   calculations:4:
     type: qm-ts
     software:
       name: "ORCA"
       version: "5.0.3"
-    output: ["./data/butane_trans_gauche_ts.log"]
+    output:
+      sources: ["./data/butane_trans_gauche_ts.log"]
   calculations:5:
     type: qm-irc
     software:
       name: "ORCA"
       version: "5.0.3"
-    output: ["./data/butane_trans_gauche_irc.log"]
+    output:
+      sources: ["./data/butane_trans_gauche_irc.log"]
   calculations:6:
     type: "thermo-from QM"
     software:
@@ -146,6 +150,17 @@ calculations:
           rot_symmetry_nr: 1
       internal_rotors: Null   # no hindered rotor modeled
     output: Null   # here, we could reference tabular thermodynamic data in the thermo list
+  calc-thermo-fit:
+    type: "thermo param fit"
+    software:
+      name: "scipy"
+      version: 1.18.0
+    # The Shomate polynomial parameters (thermo:0) were fitted to caluclations:6
+    output:
+      thermo: "thermo:0"
+    input:
+      fitted_to:
+        output_of: ["calculations:6"]
 literature:
   pittam-1972:
     type: article
