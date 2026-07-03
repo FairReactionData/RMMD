@@ -1,9 +1,9 @@
 # This file shows how the conformers of butane can be described in RMMD.
 # It also shows how to link thermochemistry data to the conformers.
 schema_version: 0.1.0b0
-metadata:
-  title: mock data for butane
-  license: MIT
+# general metadata for the dataset (author, title, license) can be supplied with a
+# CITATION.cff file (or directly in RMMD files - cf. other examples)
+metadata: ./CITATION.cff
 species:
   C4H10:
     names: ["Butane"]
