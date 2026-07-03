@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from typing import Annotated, Generic, Literal, TypeVar
+
 from annotated_types import MinLen
 
 from ._base import RmmdBaseModel
 from .keys import CalcIndex
 from .metadata import CitationKeyOrDirectReference, UrlNoDoiOrg
+from .registry import HasKeyMixin
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
@@ -29,7 +31,7 @@ class OutputOf(RmmdBaseModel):
     """index of the calculation that produces the output of this calculation"""
 
 
-class CalculationBase(RmmdBaseModel, Generic[InputT, OutputT]):
+class CalculationBase(HasKeyMixin, Generic[InputT, OutputT]):
     type: str
     """type of the calculation"""
 

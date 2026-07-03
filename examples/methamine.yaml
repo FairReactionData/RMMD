@@ -36,7 +36,8 @@ species:
     # the cis- and trans-isomers of the CH=NH radical are lumped into a single species)
     entities: [cis-HC=NH, trans-HC=NH]
 reactions:
-  - reactants: [CH2NH, OOH]
+  reactions:0:
+    reactants: [CH2NH, OOH]
     products: [CH2N, HOOH]
 # Entities must have unique keys and are used to uniquely identify species, preferably
 # by using canonical identifiers such as InChIKeys.
@@ -67,13 +68,13 @@ entities:
     description: CH2NH-OOH pre-reactive complex - PRC1
     conformations: [conformations:6]
     # Sometimes, the employed canoncial identifier is not sufficient to distinguish
-    # molecular entities. Here, different pre-reactive complexes have to be 
+    # molecular entities. Here, different pre-reactive complexes have to be
     # distinguished as they lead to different products. In such a case, one can add
     # the defining_conformations field which, unlike the conformations field, will
     # contain all possible conformations of a molecular entity by definition.
     defining_conformations: [conformations:6]
     # If defining_conformations does not have its default value, the supplied InChI
-    # will not uniquely identify the entity anymore and no canonical identification 
+    # will not uniquely identify the entity anymore and no canonical identification
     # of the entity is possible. Here, all pre-reactive complexes share an InChI.
     inchi_fixedh:
         value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
@@ -98,7 +99,7 @@ entities:
       state: "ground-state"
     conformations: [conformations:3]
     # Here, for example, InChI cannot distinguish the cis-trans-
-    # isomerism of this radical. 
+    # isomerism of this radical.
     defining_conformations: [conformations:3]
   trans-HC=NH:
     inchi_fixedh:
@@ -114,7 +115,7 @@ entities:
         value: "InChI=1/H2O2/c1-2/h1-2H"
     conformations: [conformations:2]
     electronic_spin:
-      # For a ground state, the number of unpaired electrons will be computed 
+      # For a ground state, the number of unpaired electrons will be computed
       # automatically and does not have to be explicitly supplied.
       # n_unpaired: 0
       multiplicity: 1
@@ -138,37 +139,46 @@ entities:
     defining_conformations: [conformations:8]
 # Conformations and their relations describe the PES in RMMD
 conformations:
-  - description: "CH2NH"
+  conformations:0:
+    description: "CH2NH"
     type: "minimum"
     # each conformation can be linked to multiple calculations, e.g., at different
     # levels of theory
-    type:  "minimum"
     calculations: [calculations:0, calculations:1]
-  - description: "*OOH"
+  conformations:1:
+    description: "*OOH"
     type: "minimum"
     calculations: [calculations:2]
-  - description: "HOOH"
+  conformations:2:
+    description: "HOOH"
     type: "minimum"
     calculations: [calculations:3]
-  - description: "cis-HC*=NH"
+  conformations:3:
+    description: "cis-HC*=NH"
     type: "minimum"
     calculations: [calculations:4]
-  - description: "trans-HC*=NH"
+  conformations:4:
+    description: "trans-HC*=NH"
     type: "minimum"
     calculations: [calculations:5]
-  - description: "CH2N*"
+  conformations:5:
+    description: "CH2N*"
     type: "minimum"
     calculations: [calculations:6]
-  - description: "pre-reactive complex 1 - PRC1"
+  conformations:6:
+    description: "pre-reactive complex 1 - PRC1"
     type: "minimum"
     calculations: [calculations:7]
-  - description: "PRC2"
+  conformations:7:
+    description: "PRC2"
     type: "minimum"
     calculations: [calculations:8]
-  - description: "PRC3"
+  conformations:8:
+    description: "PRC3"
     type: "minimum"
     calculations: [calculations:9]
-  - description: "TS7"
+  conformations:9:
+    description: "TS7"
     identifiers:
       # We can add identifiers to saddle points as well, but only few can really
       # represent them. Here, the saddlepoint is described by an InChI that defines two
@@ -177,38 +187,46 @@ conformations:
         value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
     type: "saddle-point"
     calculations: [calculations:10]
-  - description: "TS8"
+  conformations:10:
+    description: "TS8"
     type: "saddle-point"
     calculations: [calculations:12]
-  - description: "TS9"
+  conformations:11:
+    description: "TS9"
     type: "saddle-point"
 pes_relations:
   # PRC1 - TS7 - cis-CH=NH, validated by an IRC scan
-  - saddle_point: conformations:9
+  pes_relations:0:
+    saddle_point: conformations:9
     end_points: [[conformations:6], [conformations:3]]
     calculations: [calculations:11]
   # PRC2 - TS8 - trans-CH=NH
-  - saddle_point: conformations:10
+  pes_relations:1:
+    saddle_point: conformations:10
     end_points: [[conformations:7], [conformations:4]]
     # two IRC scans were used for validation
     calculations: [calculations:13, calculations:14]
   # PRC3 - TS9 - CH2N
-  - saddle_point: conformations:11
+  pes_relations:2:
+    saddle_point: conformations:11
     end_points: [[conformations:8], [conformations:5]]
     # one IRC scan for validation
     calculations: [calculations:15]
   # there is no barrier between the reactants and the three pre-reactive complexes:
-  - saddle_point: barrierless
+  pes_relations:3:
+    saddle_point: barrierless
     end_points:
       - [conformations:6]
       - [conformations:0, conformations:1]
     # the absence of a barrier was confirmed by a scan/constrained optimizations
     calculations: [calculations:16]
-  - saddle_point: barrierless
+  pes_relations:4:
+    saddle_point: barrierless
     end_points:
       - [conformations:7]
       - [conformations:0, conformations:1]
-  - saddle_point: barrierless
+  pes_relations:5:
+    saddle_point: barrierless
     end_points:
       - [conformations:8]
       - [conformations:0, conformations:1]
@@ -216,7 +234,8 @@ pes_relations:
 # link calculations (and thereby, concrete geometries) to conformations and their
 # relations
 calculations:
-  - type: qm-optimization
+  calculations:0:
+    type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -224,7 +243,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ch2nh_opt.log"]
-  - type: qm-energy
+  calculations:1:
+    type: qm-energy
     input:
       level_of_theory: "DLPNO-CCSD(T)-F12/cc-pVTZ-F12"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -232,7 +252,8 @@ calculations:
       name: "ORCA"
       version: "6.0.1"
     output: ["./data/ch2nh_energy.log"]
-  - type: qm-optimization
+  calculations:2:
+    type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 2}
@@ -240,7 +261,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ooh_opt.log"]
-  - type: qm-optimization
+  calculations:3:
+    type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -248,7 +270,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/hooh_opt.log"]
-  - type: qm-optimization
+  calculations:4:
+    type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 2}
@@ -256,7 +279,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ch_nh1_opt.log"]
-  - type: qm-optimization
+  calculations:5:
+    type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 2}
@@ -264,7 +288,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ch_nh2_opt.log"]
-  - type: qm-optimization
+  calculations:6:
+    type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 2}
@@ -272,27 +297,32 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ch2n_opt.log"]
-  - type: qm-optimization  # optimization of the pre-reactive complex (PRC1)
+  calculations:7:
+    type: qm-optimization  # optimization of the pre-reactive complex (PRC1)
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/prc1_opt.log"]
-  - type: qm-optimization  # PRC2
+  calculations:8:
+    type: qm-optimization  # PRC2
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/prc2_opt.log"]
-  - type: qm-optimization  # PRC3
+  calculations:9:
+    type: qm-optimization  # PRC3
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/prc3_opt.log"]
-  - type: qm-ts
+  calculations:10:
+    type: qm-ts
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ts7.log"]
-  - type: qm-irc
+  calculations:11:
+    type: qm-irc
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -303,7 +333,8 @@ calculations:
       # saddle point found by calculation 10 is used as starting point
       ts: {output_of: calculations:10}
     output: ["./data/irc1"]
-  - type: qm-ts
+  calculations:12:
+    type: qm-ts
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -311,7 +342,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ts8.log"]
-  - type: qm-irc
+  calculations:13:
+    type: qm-irc
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -320,7 +352,8 @@ calculations:
       electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "forward"
     output: ["./data/irc8_forward.log"]
-  - type: qm-irc
+  calculations:14:
+    type: qm-irc
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -329,7 +362,8 @@ calculations:
       electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "reverse"
     output: ["./data/irc8_reverse.log"]
-  - type: qm-ts
+  calculations:15:
+    type: qm-ts
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
@@ -337,7 +371,8 @@ calculations:
       name: "Gaussian"
       version: "16 Rev. C.01"
     output: ["./data/ts9.log"]
-  - type: qm-scan
+  calculations:16:
+    type: qm-scan
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}

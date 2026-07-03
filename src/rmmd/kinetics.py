@@ -2,11 +2,11 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-from ._base import RmmdBaseModel
 from .keys import CitationKey
+from .registry import HasKeyMixin
 
 
-class _RateCoefficientBase(RmmdBaseModel):
+class _RateCoefficientBase(HasKeyMixin):
     """Base class for rate coefficients"""
 
     type: str
