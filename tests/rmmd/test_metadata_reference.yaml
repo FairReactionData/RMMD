@@ -1,0 +1,15 @@
+--- # test setup
+description: Minimal tests for the CFF Reference model.
+schema_part: metadata.Reference
+test_type: multiple
+failures:
+  - loc: [1, 'authors']
+    msg: 'Field required'
+--- # actual examples
+- authors:
+    - family-names: Smith
+      given-names: John
+  title: "An Example Paper"
+  type: article
+- title: "Paper without authors"  # invalid: authors is required
+  type: article

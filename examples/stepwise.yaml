@@ -1,7 +1,9 @@
 schema_version: 0.1.0b0
-license: MIT
-description: "This example shows how a stepwise reaction on the mechanism level can be
-  defined."
+metadata:
+  license: MIT
+  title: Stepwise reactions example
+  description: "This example shows how a stepwise reaction on the mechanism level can be
+    defined."
 species:
   NO2:
     entities: [JCXJVPUVTGWSNB-UHFFFAOYNA-N]

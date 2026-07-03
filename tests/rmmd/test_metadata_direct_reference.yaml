@@ -1,41 +1,24 @@
 --- # test setup
-description: Contains all types of jobs with toy data.
-schema_part: metadata.DirectReference # this special model allows defining
-                # a list of direct references so we include multiple test cases
-                # in this one file
+description: Contains all types of direct references with toy data.
+schema_part: metadata.CitationKeyOrDirectReference
 test_type: multiple
 failures:
-  - loc: [0, 'HttpUrlReference']  # since we use a discriminated union, the model is
-                            # part of the location
-    msg_pattern: 'Value error, HandleNet identifiers should be provided as full URLs.*'
-  - loc: [1, 'HandleNet']
-    msg_pattern: 'String should match pattern .*handle\\\.net.*'
-  - loc: [2, 'HttpUrlReference']
-    msg: 'Value error, DOIs should be provided as full URLs starting with https'
-  - loc: [3, 'HttpUrlReference']
-    msg_pattern: 'Value error, DOIs should follow the format https://doi.org/10.xxxx/.*'
-  - loc: [4, 'Doi']
-    msg: 'String should match pattern ''^https:\/\/doi\.org\/10\.\d{4,}/.*'''
-  - loc: [7]
-    msg: 'Could not determine the type of direct reference. Valid direct references include DOIs, HandleNet identifiers, HTTP URLs, or relative file paths.'
-  - loc: [9]
-    msg_pattern: 'Could not determine the type of direct reference.*'
-  - loc: [10]
-    msg_pattern: 'Could not determine the type of direct reference.*'  # absolute paths not allowed
-  - loc: [11, 'HttpUrlReference']
-    msg: 'Value error, HandleNet identifiers should be provided as full URLs starting with https://hdl.handle.net/...' # absolute paths not allowed
---- # actual example
-- "http://hdl.handle.net/10.1234/abcd" # invalid: http instead of https
-- "https://hdl.handle.net/10.1234/abcd" # invalid DOI with handle.net resolver
-                                        # instead of doi.org
-- "http://doi.org/10.1234" # invalid: http instead of https
-- "https://www.doi.org/10.1234/abcd" #invalid: www.doi.org instead of doi.org
-- "https://doi.org/11.1234" # invalid: DOI starting with 11 instead of 10
-- "http://example.com/" # valid
-- "https://example.com/some/path/to/file.txt" # valid
-- "example.com" # invalid: no URL scheme, i.e., no http(s) or file://
-- "./path/to/local/file.txt" # valid
-- "/absolute/path/to/local/file.txt" # invalid: absolute paths not allowed
-- "file:///path/to/local/file.txt" # invalid: absolute path not allowed
-- "http://hdl.handle.net/1001" # invalid: http instead of https
-
+  - loc: [6, 'Doi']
+    msg_pattern: 'String should match pattern .*'
+  - loc: [7, 'CitationKey']
+    msg_pattern: 'String should match pattern .*'
+  - loc: [8, 'CitationKey']
+    msg_pattern: 'String should match pattern .*'
+  - loc: [9, 'CitationKey']
+    msg_pattern: 'String should match pattern .*'
+--- # actual examples
+- "http://example.com/"                  # valid: http URL
+- "https://example.com/path/to/file.txt" # valid: https URL
+- "ftp://example.com/file.txt"           # valid: ftp URL
+- "./path/to/local/file.txt"             # valid: relative local file
+- "10.1234/abcd"                         # valid: CFF-style DOI
+- "mycitation2024"                       # valid: citation key
+- "10.xxx/abcd"                          # invalid: DOI with non-numeric prefix part
+- "ssh://example.com/path"              # invalid: unsupported protocol
+- "/absolute/path/to/file.txt"          # invalid: absolute path not allowed
+- "file:///path/to/file.txt"            # invalid: file:// absolute path not allowed
