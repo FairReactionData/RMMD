@@ -37,7 +37,7 @@ RegistryKey = Annotated[
         # special characters that may have special meaning in YAML or other
         # serialization formats.
         # Disallowing spaces will reduce complications with YAML files and unquoted
-        # strings in various file formats. ":"" and "#"" will require quotation in YAML,
+        # strings in various file formats. ":" and "#" will require quotation in YAML,
         # but SMILES may contain them
         pattern=r"^[A-Za-z0-9](?:[A-Za-z0-9_\-\.\:\/@#%+\(\)\$=\[\]><]{0,79})$",
         examples=[

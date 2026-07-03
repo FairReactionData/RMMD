@@ -11,7 +11,7 @@ from collections.abc import MutableMapping
 import itertools
 from typing import ClassVar, Generic, Self, TypeVar
 
-from pydantic import Field, RootModel, model_validator
+from pydantic import Field, PrivateAttr, RootModel, model_validator
 from .keys import RegistryKey
 
 from ._base import RmmdBaseModel
@@ -30,7 +30,11 @@ class HasKeyMixin(RmmdBaseModel):
 T = TypeVar("T", bound=HasKeyMixin)
 
 
-class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
+class Registry(
+    RootModel[dict[RegistryKey, T]],
+    MutableMapping[RegistryKey, T],
+    Generic[T],
+):
     """A mapping of string key -> item with automatic key assignment.
 
     Subclass with a ``prefix`` keyword argument to control the prefix used
@@ -46,7 +50,9 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
 
     prefix: ClassVar[str] = "item"
 
-    root: dict[str, T] = Field(default_factory=dict)
+    root: dict[RegistryKey, T] = Field(default_factory=dict)
+
+    _counter: itertools.count[int] = PrivateAttr()
 
     def __init_subclass__(cls, prefix: str = "item", **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
@@ -102,7 +108,7 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
             pass
         return key
 
-    def add(self, value: T) -> str:
+    def add(self, value: T) -> RegistryKey:
         """Add *value*, auto-assigning a key when ``value.key`` is ``None``.
 
         Returns the key under which the item was stored.  If the item
@@ -111,6 +117,7 @@ class Registry(RootModel[dict[str, T]], MutableMapping[str, T], Generic[T]):
         """
         if value.key is None:
             object.__setattr__(value, "key", self._next_key())
+            assert value.key is not None  # for type checker
         self[value.key] = value
         return value.key
 
