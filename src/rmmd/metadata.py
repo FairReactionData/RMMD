@@ -30,11 +30,11 @@ DOIs are represented.
 """
 
 
-# The pydantic CFF Url is just AnyUrl (althought in the JSON schema, only http(s) and
-# (s)ftp are allowed. Here, we also require a host allowing us to check for DOIs which
-# should not be supplied as URLs. Relevant b/c there is a union of Url and Doi below
+# The pydantic CFF Url is just AnyUrl (although in the JSON schema, only http(s) and
+# (s)ftp are allowed). Here, we also require a host allowing us to check for DOIs which
+# should not be supplied as URLs. Relevant because there is a union of Url and Doi below
 class UrlNoDoiOrg(AnyUrl):
-    """http or https URL, but not allowing www.doi.org or doi.org URLs."""
+    """HTTP or HTTPS URL, but not allowing www.doi.org or doi.org URLs."""
 
     _constraints = UrlConstraints(
         # URL schemes allowed by CFF 1.2.0
@@ -54,7 +54,7 @@ class UrlNoDoiOrg(AnyUrl):
         # We use the citation file format representation of DOIs
         if self.host in ("www.doi.org", "doi.org"):
             raise ValueError(
-                "DOIs be provided as prefix/suffix not as www.doi.org URLs"
+                "DOIs should be provided as prefix/suffix, not as www.doi.org URLs"
             )
 
         return self
