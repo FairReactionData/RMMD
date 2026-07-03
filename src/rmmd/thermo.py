@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from annotated_types import MaxLen, MinLen
-from pydantic import model_validator
+from pydantic import Discriminator, Tag, model_validator
 
 from ._base import RmmdBaseModel
-from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase, OutputOf
+from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase
 from .keys import CalcIndex, CitationKey, ConformationIndex, SpeciesName, ThermoIndex
 from .registry import HasKeyMixin
 
@@ -192,19 +192,47 @@ class FittedToThermoData(RmmdBaseModel):
     """thermodynamic data that the coefficients of this model were fitted to"""
 
 
-class FittedToCalculationOutput(RmmdBaseModel):
+class FittedToOtherCalculation(RmmdBaseModel):
     """calculation output that the coefficients of this model were fitted to"""
 
     output_of: list[CalcIndex]
     """calculation output that the coefficients of this model were fitted to"""
 
 
+# annotated union for better error messages:
+def _fitted_to_discriminator(value: dict | RmmdBaseModel) -> str | None:
+    if isinstance(value, dict):
+        if "sources" in value:
+            return "literature"
+        elif "thermo" in value:
+            return "thermo data"
+        elif "output_of" in value:
+            return "calculation output"
+
+    else:
+        if hasattr(value, "sources"):
+            return "literature"
+        elif hasattr(value, "thermo"):
+            return "thermo data"
+        elif hasattr(value, "output_of"):
+            return "calculation output"
+
+    # Could not determine the type, return None to let Pydantic handle the error
+    return None
+
+
+_FittedToUnion = Annotated[
+    Annotated[FittedToLiterature, Tag("literature")]
+    | Annotated[FittedToThermoData, Tag("thermo")]
+    | Annotated[FittedToOtherCalculation, Tag("calculation output")],
+    Discriminator(_fitted_to_discriminator),
+]
+
+
 class ThermoParameterFittingInput(CalculationInputBase):
     """input data for a fitting calculation"""
 
-    fitted_to: (
-        FittedToLiterature | FittedToThermoData | FittedToCalculationOutput | None
-    ) = None
+    fitted_to: _FittedToUnion | None = None
     """data/model that the coefficients of this model were fitted to.
 
     If the model was fitted to data form this dataset, an integer (starting at
