@@ -95,10 +95,33 @@ class _HasReferenceStateMixin(RmmdBaseModel):
 ###############################################################################
 
 
+class FittedToLiterature(RmmdBaseModel):
+    """literature sources that the coefficients of this model were fitted to"""
+
+    sources: list[CitationKey]
+    """literature sources that the coefficients of this model were fitted to"""
+
+
+class FittedToThermoData(RmmdBaseModel):
+    """thermodynamic data that the coefficients of this model were fitted to"""
+
+    thermo: list[ThermoIndex]
+    """thermodynamic data that the coefficients of this model were fitted to"""
+
+
+class FittedToCalculationOutput(RmmdBaseModel):
+    """calculation output that the coefficients of this model were fitted to"""
+
+    output_of: list[CalcIndex]
+    """calculation output that the coefficients of this model were fitted to"""
+
+
 class _FittedToMixin(RmmdBaseModel):
     """inherit from this class to get fields related to fitting provenance"""
 
-    fitted_to: list[CitationKey] | ThermoIndex | CalcIndex | None = None
+    fitted_to: (
+        FittedToLiterature | FittedToThermoData | FittedToCalculationOutput | None
+    ) = None
     """data/model that the coefficients of this model were fitted to.
 
     If the model was fitted to data form this dataset, an integer (starting at

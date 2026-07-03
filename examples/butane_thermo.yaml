@@ -27,7 +27,8 @@ thermo:
     coefficients:
       - [  3.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
       - [  2.000,  0.000, -1.200,  0.000,  0.000, -1.200,  0.000]
-    fitted_to: "calculations:6"  # fittet to entry 7 (zero-based ids) in calculations
+    fitted_to:
+      output_of: ["calculations:6"]  # fittet to entry 7 (zero-based ids) in calculations
   thermo:1:
     type: "absolute tabular thermo"
     T: [298]
