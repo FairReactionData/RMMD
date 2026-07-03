@@ -1,0 +1,24 @@
+--- # test setup
+description: Test General Calculation
+schema_part: calc.GeneralCalculation
+test_type: multiple
+failures:
+  - loc: [0, 'input']
+    msg: "'sources' must be provided if no other input data is given."
+  - loc: [1, 'output']
+    msg: "'sources' must be provided if no other output data is given."
+---
+- type: general
+  software:
+    name: some software
+    version: unspecified
+  input: {}
+  output:
+    sources: ["./some_file"]
+- type: general
+  software:
+    name: some software
+    version: unspecified
+  input:
+    thermo: [thermo-0001]
+  output: {}

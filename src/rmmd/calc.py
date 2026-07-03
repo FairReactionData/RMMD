@@ -1,7 +1,7 @@
 """Tracking data provenance through calculations
 
 Module contains models to define calculations with specific input and output data.
-Calculations are RMMD's main mechanism to track the provenance of model data from from
+Calculations are RMMD's main mechanism to track the provenance of model data from
 ab-initio quantum chemistry calculations to parameters of empirical models for
 thermodynamic and kinetic properties.
 The mechanism is similar to the Metadata4Ing ontology [1] in the context of which
@@ -20,9 +20,10 @@ from __future__ import annotations
 from typing import Annotated, Generic, Literal, TypeVar
 
 from annotated_types import MinLen
+from pydantic import Discriminator, Tag
 
 from ._base import RmmdBaseModel
-from .keys import CalcIndex
+from .keys import CalcIndex, KineticsIndex, ThermoIndex, TransportIndex
 from .metadata import CitationKeyOrDirectReference, UrlNoDoiOrg
 from .registry import HasKeyMixin
 
@@ -40,7 +41,7 @@ class CalculationInputBase(RmmdBaseModel):
     data in the subclass fields.
     """
 
-    sources: list[CitationKeyOrDirectReference] | None = None
+    sources: Annotated[list[CitationKeyOrDirectReference], MinLen(1)] | None = None
     """Location of the input data, e.g., a file in the current dataset or a
     reference to a published dataset."""
 
@@ -54,49 +55,56 @@ class CalculationOutputBase(RmmdBaseModel):
     data in the subclass fields.
     """
 
-    sources: list[CitationKeyOrDirectReference] | None = None
+    sources: Annotated[list[CitationKeyOrDirectReference], MinLen(1)] | None = None
     """Location of the output data, e.g., a file in the current dataset or a
     reference to a published dataset."""
 
 
-# non-optional sources filed to allow supplying just the sources without any structured
-# data. Useful for cases where no schema was defined for a specific kind of calculation,
-# but not recommended for cases where it was.
-class CalculationInputSourcesOnly(RmmdBaseModel):
+# users are not forced to supply structure data and can just link input and output files
+class CalculationInputSourcesRequired(RmmdBaseModel):
     """Calculation input defined only by referencing other resources, e.g., input files."""
 
-    sources: list[CitationKeyOrDirectReference]
+    sources: Annotated[list[CitationKeyOrDirectReference], MinLen(1)]
 
 
-class CalculationOutputSourcesOnly(RmmdBaseModel):
+class CalculationOutputSourcesRequired(RmmdBaseModel):
     """Calculation output defined only by referencing other resources, e.g., log files."""
 
     sources: list[CitationKeyOrDirectReference]
 
 
-class Software(RmmdBaseModel):
-    """computer software used to perform a calculation"""
+# use callable discriminator for better error messages
+def _calc_io_discriminator(v: object) -> str | None:
+    """Discriminator for calculation input/output data.
 
-    name: Annotated[str, MinLen(1)]
-    """name of the software"""
-    version: Annotated[str, MinLen(1)]
-    """version number or Git hash of the software used for the calculation"""
-    repository: UrlNoDoiOrg | None = None
-    """URL to the software repository, e.g., GitHub or GitLab"""
+    Selects the structured model (the general ``InputT``/``OutputT``) when any
+    structured field is provided, or the sources-only model when nothing but
+    ``sources`` is given. Returns ``None`` for an empty dict or when all fields
+    are ``None``, which makes the ``Discriminator`` raise the custom error
+    requiring ``sources`` to be provided.
+    """
+    if isinstance(v, dict):
+        set_fields = {key for key, value in v.items() if value is not None}
+    else:
+        set_fields = {
+            field
+            for field in getattr(type(v), "model_fields", ())
+            if getattr(v, field, None) is not None
+        }
+    if not set_fields:
+        return None
+    if set_fields == {"sources"}:
+        return "sources_only"
+    return "structured"
 
 
-class OutputOf(RmmdBaseModel):
-    """helper class to declare that a calculation's output is the input for another"""
-
-    output_of: CalcIndex
-    """index of the calculation that produces the output of this calculation"""
-
-
-InputT = TypeVar("InputT", bound=CalculationInputBase | CalculationInputSourcesOnly)
-OutputT = TypeVar("OutputT", bound=CalculationOutputBase | CalculationOutputSourcesOnly)
+InputT = TypeVar("InputT", bound=CalculationInputBase)
+OutputT = TypeVar("OutputT", bound=CalculationOutputBase)
 
 
 class CalculationBase(HasKeyMixin, Generic[InputT, OutputT]):
+    """Base class for a calculation."""
+
     type: str
     """type of the calculation"""
 
@@ -119,7 +127,20 @@ class CalculationBase(HasKeyMixin, Generic[InputT, OutputT]):
     reference a specific paper describing the method used for this calculation.
     """
 
-    input: InputT | CalculationInputSourcesOnly | None = None
+    input: (
+        Annotated[
+            Annotated[InputT, Tag("structured")]
+            | Annotated[CalculationInputSourcesRequired, Tag("sources_only")],
+            Discriminator(
+                _calc_io_discriminator,
+                custom_error_type="missing_calculation_input",
+                custom_error_message=(
+                    "'sources' must be provided if no other input data is given."
+                ),
+            ),
+        ]
+        | None
+    ) = None
     """input data/parameters for the calculation
 
     Structured input data specific to the calculation type (recommended), or, if
@@ -128,12 +149,53 @@ class CalculationBase(HasKeyMixin, Generic[InputT, OutputT]):
     ``input.sources``.
     """
 
-    output: OutputT | CalculationOutputSourcesOnly | None = None
+    output: (
+        Annotated[
+            Annotated[OutputT, Tag("structured")]
+            | Annotated[CalculationOutputSourcesRequired, Tag("sources_only")],
+            Discriminator(
+                _calc_io_discriminator,
+                custom_error_type="missing_calculation_output",
+                custom_error_message=(
+                    "'sources' must be provided if no other output data is given."
+                ),
+            ),
+        ]
+        | None
+    ) = None
     """output data for the calculation
 
     Structured output data specific to the calculation type (recommended), or, if
-    unavailable, a references to the raw output data provided via ``output.sources``.
+    unavailable, a reference to the raw output data provided via ``output.sources``.
     """
+
+
+################################################################################
+# misc
+################################################################################
+
+
+class Software(RmmdBaseModel):
+    """computer software used to perform a calculation"""
+
+    name: Annotated[str, MinLen(1)]
+    """name of the software"""
+    version: Annotated[str, MinLen(1)]
+    """version number or Git hash of the software used for the calculation"""
+    repository: UrlNoDoiOrg | None = None
+    """URL to the software repository, e.g., GitHub or GitLab"""
+
+
+class OutputOf(RmmdBaseModel):
+    """helper class to declare that a calculation's output is the input for another"""
+
+    output_of: CalcIndex
+    """index of the calculation that produces the output of this calculation"""
+
+
+################################################################################
+# useful calculation types
+################################################################################
 
 
 class NestedCalculation(CalculationBase[CalculationInputBase, CalculationOutputBase]):
@@ -152,14 +214,51 @@ class NestedCalculation(CalculationBase[CalculationInputBase, CalculationOutputB
     """
 
 
-class GeneralCalculation(
-    CalculationBase[CalculationInputSourcesOnly, CalculationOutputSourcesOnly]
-):
-    """General calculation to use if no suitable specific calculation class is available.
+class GeneralCalculationInput(CalculationInputBase):
+    """Input of a general calculation.
 
-    The specification of input and output data is limited to providing references to the
-    raw data files via ``input.sources`` and ``output.sources``. No structured data is
-    provided in the RMMD file in this case.
+    Allows using different RMMD-representable data as calculation input.
+    """
+
+    thermo: Annotated[list[ThermoIndex], MinLen(1)] | None = None
+    """thermodynamic model/data used as input for the calculation"""
+
+    transport: Annotated[list[TransportIndex], MinLen(1)] | None = None
+    """transport model/data used as input for the calculation"""
+
+    rate_coefficients: Annotated[list[KineticsIndex], MinLen(1)] | None = None
+    """kinetic model/data used as input for the calculation"""
+
+    output_of: Annotated[list[CalcIndex], MinLen(1)] | None = None
+    """calculation(s) that produced the input data for this calculation"""
+
+
+class GeneralCalculationOutput(CalculationOutputBase):
+    """Output of a general calculation.
+
+    Allows using different RMMD-representable data as calculation output.
+    """
+
+    thermo: Annotated[list[ThermoIndex], MinLen(1)] | None = None
+    """thermodynamic model/data produced by the calculation"""
+
+    transport: Annotated[list[TransportIndex], MinLen(1)] | None = None
+    """transport model/data produced by the calculation"""
+
+    rate_coefficients: Annotated[list[KineticsIndex], MinLen(1)] | None = None
+    """kinetic model/data produced by the calculation"""
+
+
+class GeneralCalculation(
+    CalculationBase[GeneralCalculationInput, GeneralCalculationOutput]
+):
+    """General calculation, if no suitable specific calculation class is available.
+
+    While a specific calculation is preferred to provide machine-actionable, structured
+    data, the "general" calculation type can be used to add provenance information for
+    data that is not yet represented in RMMD.
+    Input and output can be different RMMD-representable data types, e.g.,
+    thermodynamic, transport, or kinetic data, as well as literature references.
     """
 
     type: Literal["general"] = "general"

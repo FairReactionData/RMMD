@@ -101,8 +101,6 @@ class Schema(RmmdBaseModel, extra="forbid"):
     pes_relations: PesRelationRegistry = Field(default_factory=PesRelationRegistry)
     """relations between conformations, e.g., which conformations are considered to be
     the same, which conformations are connected by an IRC path, ..."""
-    calculations: CalculationRegistry = Field(default_factory=CalculationRegistry)
-    """quantum chemistry calculations"""
 
     ### metadata ###
     schema_version: Literal["0.1.0b0"] = "0.1.0b0"
@@ -114,8 +112,11 @@ class Schema(RmmdBaseModel, extra="forbid"):
     such as a CITATION.CFF
     """
 
+    ### provenance ###
     literature: dict[CitationKey, Doi | Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""
+    calculations: CalculationRegistry = Field(default_factory=CalculationRegistry)
+    """quantum chemistry calculations"""
 
 
 Schema.model_rebuild()
