@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import Discriminator, Field, Tag
+from pydantic import Discriminator, Field, Tag, model_validator
 from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase
 from .thermo import FittedToLiterature, FittedToOtherCalculation
 from ._base import RmmdBaseModel
@@ -34,6 +34,29 @@ class ModifiedArrhenius(_RateCoefficientBase):
     """activation energy in J/mol"""
 
 
+class PressureDependentArrhenius(_RateCoefficientBase):
+    """Pressure-dependent Arrhenius rate coefficient"""
+
+    type: Literal["pressure-dependent Arrhenius"] = "pressure-dependent Arrhenius"
+
+    A: list[float]
+    """pre-exponential factor in SI units"""
+    b: list[float]
+    """temperature exponent"""
+    Ea: list[float]
+    """activation energy in J/mol"""
+    p: list[float]
+    """pressure points in Pa"""
+
+    @model_validator(mode="after")
+    def _check_lengths(self):
+        if not (len(self.A) == len(self.b) == len(self.Ea) == len(self.p)):
+            raise ValueError(
+                "The lengths of A, b, Ea, and p must be the same for pressure-dependent Arrhenius."
+            )
+        return self
+
+
 class RateTable(_RateCoefficientBase):
     """Rate coefficient table for a specific reaction"""
 
@@ -53,7 +76,10 @@ class RateTable(_RateCoefficientBase):
 
 # TODO add rates from TST, master equation, etc.
 
-RateCoefficient = Annotated[ModifiedArrhenius | RateTable, Field(discriminator="type")]
+RateCoefficient = Annotated[
+    ModifiedArrhenius | PressureDependentArrhenius | RateTable,
+    Field(discriminator="type"),
+]
 
 
 ###############################################################################
@@ -98,7 +124,7 @@ _FittedToUnion = Annotated[
 ]
 
 
-class ThermoParameterFittingInput(CalculationInputBase):
+class KineticsParameterFittingInput(CalculationInputBase):
     """input data for a fitting calculation"""
 
     fitted_to: _FittedToUnion | None = None
@@ -109,18 +135,18 @@ class ThermoParameterFittingInput(CalculationInputBase):
     """
 
 
-class ThermoParameterFittingOutput(CalculationOutputBase):
+class KineticsParameterFittingOutput(CalculationOutputBase):
     """output data for a fitting calculation"""
 
-    thermo: KineticsIndex
+    rate_constants: KineticsIndex
     """model parameters that were fitted to the data"""
 
     # TODO add fit quality metric
 
 
-class ThermoParameterFitting(
-    CalculationBase[ThermoParameterFittingInput, ThermoParameterFittingOutput]
+class KineticsParameterFitting(
+    CalculationBase[KineticsParameterFittingInput, KineticsParameterFittingOutput]
 ):
     """calculation of thermochemical properties derived from fitting to data"""
 
-    type: Literal["thermo param fit"] = "thermo param fit"
+    type: Literal["kinetic param fit"] = "kinetic param fit"
