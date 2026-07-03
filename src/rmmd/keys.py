@@ -41,9 +41,26 @@ SpeciesName = Annotated[
 EntityKey = Annotated[
     str,
     Field(
-        min_length=27,
-        max_length=27,
-        pattern="^[A-Z]{14}-[A-Z]{10}-[A-Z]$",
+        min_length=1,
+        # We need some limit, 80 seems reasonable
+        max_length=80,
+        # Allow a broad but controlled set of ASCII characters commonly used
+        # in identifiers, filenames and SMILES. Must start with an
+        # alphanumeric character to avoid complications such as keys starting with
+        # special characters that may have special meaning in YAML or other
+        # serialization formats.
+        # Disallowing spaces will reduce complications with YAML files and unquoted
+        # strings in various file formats. ":"" and "#"" will require quotation in YAML,
+        # but SMILES may contain them
+        pattern=r"^[A-Za-z0-9](?:[A-Za-z0-9_\-\.\:\/@#%+\(\)\$=\[\]><]{0,79})$",
+        examples=[
+            "XLYOFNOQVPJJNP-UHFFFAOYSA-N",
+            "species-123",
+            "CH4_iso(1)",
+            "path/to/species",
+            "C=C",
+            "C$C",
+        ],
     ),
 ]
 """key for a canonical representation of a species in the dataset, currently: InChIKey with fixed-H layer"""

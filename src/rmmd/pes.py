@@ -21,16 +21,17 @@ from pydantic import (
 from ._base import RmmdBaseModel, RmmdFrozenBaseModel
 from .calc import CalculationBase, OutputOf
 from .elements import ElementSymbol
+from .identifiers import StringIdentifier
 from .keys import CalcIndex, ConformationIndex
 
 
-class ElectronicState(RmmdBaseModel, frozen=True):
+class ElectronicState(RmmdFrozenBaseModel, frozen=True):
     """Definition of the electronic state"""
 
     charge: int
     """total charge"""
-    spin: NonNegativeInt | Literal["unknown"]
-    """2S - two times the electron spin quantum number"""
+    multiplicity: NonNegativeInt
+    """2S+1 - two times the electron spin quantum number + 1"""
 
     description: str | None = None
     """human-readable description of the electronic state, e.g. "ground state"
@@ -39,28 +40,6 @@ class ElectronicState(RmmdBaseModel, frozen=True):
     add additional information about the electronic state, e.g., the term
     symbol
     """
-
-    @model_validator(mode="after")
-    def require_description_for_unknown_spin(self):
-        """require a description if the spin is unknown"""
-        if self.spin == "unknown" and not self.description:
-            raise ValueError("Description is required if the spin is unknown")
-        return self
-
-
-class ElectronicStateWitSpin(ElectronicState, frozen=True):
-    """Electronic state with spin multiplicity
-
-    This model should be used where the spin multiplicity is required, e.g., in
-    quantum chemistry calculations.
-    """
-
-    spin: NonNegativeInt
-    """2S - two times the electron spin quantum number"""
-
-    def spin_multiplicity(self) -> int:
-        """spin multiplicity, i.e. 2S+1"""
-        return self.spin + 1
 
 
 LevelOfTheory = Annotated[
@@ -339,12 +318,34 @@ class Conformation(RmmdBaseModel):
     description: str | None = None
     """human-readable description of the point"""
 
-    type: Literal["minimum", "saddle-point"] | None = None
+    type: Literal["minimum", "saddle-point"]
     """type of the point on the PES"""
 
     calculations: list[CalcIndex] = Field(default_factory=list)
     """quantum chemistry calculations for this point, e.g.,  geometry optimizations,
     frequency calculations, single point energy calculations, ...
+    """
+
+    identifiers: list[StringIdentifier] = Field(
+        default_factory=list,
+    )
+    """string identifiers for the conformation, e.g., InChI, SMILES, ...
+
+    At least "InChI-fixedH" has to be provided.
+
+    .. examples::
+
+        - `{"type": "InChI", "value": "InChI=1S/CH4/h1H4"}`
+        - `{"type": "custom", "label": "AMChI",
+        "value": "AMChI=1/C5H9/c1-3-5-4-2/h3-5H,1-2H3/b5-3+,5-4+"}`
+
+    .. note::
+
+        The "custom" type is used for identifiers that do not fit into the
+        standard types. Programs that use the standard identifiers (InChI,
+        SMILES) will read fields with type "InChI" or "SMILES". So, while it is
+        possible to supply an InChI via a custom identifier, it is stronlgy
+        discouraged.
     """
 
 

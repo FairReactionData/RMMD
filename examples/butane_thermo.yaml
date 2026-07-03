@@ -9,13 +9,12 @@ species:
     thermo: [thermo:0, thermo:1, thermo:2]
 entities:
   IJDNQMDRQITEOD-UHFFFAOYNA-N:
-    constitution: {C: 4, H: 10}
-    connectivity: {}
-    identifiers:
-      - type: "InChI"
-        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
-      - type: "InChIKey"
-        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
+    electronic_spin:
+        # some information on the electronic spin has to be provided
+        multiplicity: 1  # singlet
+        state: ground-state
+    inchi_fixedh:
+      value: "InChI=1/C4H10/c1-3-4-2/h3-4H2,1-2H3"
     conformations: [conformations:0, conformations:1]
 thermo:
   - type: "Shomate"
@@ -43,11 +42,24 @@ thermo:
 conformations:
   - calculations: [calculations:0, calculations:2]   # ids in the calculation list
     description: "trans conformer of butane"
+    type: "minimum"
+    identifiers:
+      - type: "InChI"
+        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
+      - type: "InChIKey"
+        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
   - calculations: [calculations:1, calculations:3]   # ids in the calculation list
     description: "gauche conformer of butane"
+    type: "minimum"
+    identifiers:
+      - type: "InChI"
+        value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
+      - type: "InChIKey"
+        value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
   # saddle points as the PES can also be added (and linked to calculations)
   - description: "trans-gauche transition state of butane"
     calculations: [calculations:4]
+    type: "saddle-point"
 pes_relations:
   - saddle_point: conformations:2
     end_points:
@@ -61,12 +73,12 @@ calculations:
       version: "5.0.3"
     input:
       level_of_theory: "B3LYP-D3BJ/def2-TZVP"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     output: ["./data/butane_opt_trans.log"]
   - type: qm-optimization+frequency
     input:
       level_of_theory: "B3LYP-D3BJ/def2-TZVP"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "ORCA"
       version: "5.0.3"
@@ -74,7 +86,7 @@ calculations:
   - type: qm-energy
     input:
       level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "ORCA"
       version: "5.0.3"
@@ -82,7 +94,7 @@ calculations:
   - type: qm-energy
     input:
       level_of_theory: "DLPNO-CCSD(T)/cc-pVnZ-CBS"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "ORCA"
       version: "5.0.3"

@@ -19,182 +19,166 @@ species:
     # A species is an ensemble of molecular entities. In RMMD a species is defined by
     # its molecular entities, i.e., two species are equal, iff. their molecular entities
     # are the same.
-    entities: [XXXXXXXXXXXXXX-XXXXXXXXXX-G]
+    entities: [CH2NH]
   HO2:
     names: ["peroxyl radical", hydroperoxyl, HO2]
-    entities: [XXXXXXXXXXXXXX-XXXXXXXXXX-I]
+    entities: [OOH]
   HOOH:
     names: [HOOH]
-    entities: [XXXXXXXXXXXXXX-XXXXXXXXXX-H]
+    entities: [HOOH]
   CH2N:
-    entities: [XXXXXXXXXXXXXX-XXXXXXXXXX-B]
+    entities: [CH2N]
   CH=NH:
     # RMMD allows "lumping" of multiple molecular entities into a single species (here,
     # the cis- and trans-isomers of the CH=NH radical are lumped into a single species)
-    entities: [XXXXXXXXXXXXXX-XXXXXXXXXX-E, XXXXXXXXXXXXXX-XXXXXXXXXX-F]
+    entities: [cis-HC=NH, trans-HC=NH]
 reactions:
   - reactants: [CH2NH, OOH]
     products: [CH2N, HOOH]
 # Entities must have unique keys and are used to uniquely identify species, preferably
-# by using canonical identifiers such as InChIs.
+# by using canonical identifiers such as InChIKeys.
 entities:
-  # TODO replace entity key pattern (currently matching InChIKeys with somethign more
-  # general, as InChI keys are not always sufficient to distinguish molecular entities
-  # anyway) -> some other PR
-  XXXXXXXXXXXXXX-XXXXXXXXXX-A:
-    # descriptions are optional but improve human-readability
-    description: CH2NH-OOH pre-reactive complex - PRC1
+  CH2NH:
+    description: CH2NH
     # A molecular entity in RMMD is defined by its connectivity, stereochemistry, and
-    # electronic state as defined by the employed canonical identifiers.
-    identifiers:
-      - type: "InChI-fixedH"
-        value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
+    # electronic state as defined by the InChI-fixedH and the electronic_spin property
+    inchi_fixedh:
+        value: "InChI=1/CH3N/c1-2/h2H,1H2"
     # Each molecular entity can be assigned several conformations on its PES. This list
     # contains the known conformations. In general, it is not meant to be an exhaustive
     # list of all possible conformations
-    conformations: [conformations:6]
-    constitution: {C: 1, N: 1, H: 4, O: 2}
-    connectivity: {}
-    electronic_state:
-      charge: 0
-      spin: 0 # singlet
-  XXXXXXXXXXXXXX-XXXXXXXXXX-B:
+    conformations: [conformations:0]
+    electronic_spin:
+      multiplicity: 1
+      state: "ground-state"
+  CH2N:
     description: CH2N*
-    constitution: {C: 1, N: 1, H: 2}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+    inchi_fixedh:
         value: "InChI=1/CH2N/c1-2/h1H2"
     conformations: [conformations:5]
-    electronic_state:
-      charge: 0
-      # TODO change spin representation as 2S is confusing
-      spin: 1 # doublet
-  XXXXXXXXXXXXXX-XXXXXXXXXX-C:
-    # transition states can also be molecular entities and thus labeled using
-    # identifiers making them findable
-    description: TS 7
-    constitution: {C: 1, N: 1, H: 4, O: 2}
-    connectivity: {}
-    # TODO add reaction InChI or similar until SMG identifiers are available
-    identifiers:
-      - type: "InChI-fixedH"
+    electronic_spin:
+      multiplicity: 2 # doublet
+      state: "ground-state"
+  PRC1:
+    # descriptions are optional but improve human-readability
+    description: CH2NH-OOH pre-reactive complex - PRC1
+    conformations: [conformations:6]
+    # Sometimes, the employed canoncial identifier is not sufficient to distinguish
+    # molecular entities. Here, different pre-reactive complexes have to be 
+    # distinguished as they lead to different products. In such a case, one can add
+    # the defining_conformations field which, unlike the conformations field, will
+    # contain all possible conformations of a molecular entity by definition.
+    defining_conformations: [conformations:6]
+    # If defining_conformations does not have its default value, the supplied InChI
+    # will not uniquely identify the entity anymore and no canonical identification 
+    # of the entity is possible. Here, all pre-reactive complexes share an InChI.
+    inchi_fixedh:
         value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
-    conformations: [conformations:9]
-    electronic_state:
-      charge: 0
-      spin: 0
-  XXXXXXXXXXXXXX-XXXXXXXXXX-D:
+    electronic_spin:
+      multiplicity: 1 # singlet
+      state: "ground-state"
+  PRC2:
     description: PRC2
-    constitution: {C: 1, N: 1, H: 4, O: 2}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+    inchi_fixedh:
         value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
     conformations: [conformations:7]
-    electronic_state:
-      charge: 0
-      spin: 0
-  XXXXXXXXXXXXXX-XXXXXXXXXX-E:
+    electronic_spin:
+      multiplicity: 1
+      state: "ground-state"
+    defining_conformations: [conformations:7]
+  cis-HC=NH:
     description: cis-HC*=NH
-    constitution: {C: 1, N: 1, H: 2}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+    inchi_fixedh:
         value: "InChI=1/CH2N/c1-2/h1-2H"
-    electronic_state:
-      charge: 0
-      spin: 1 # doublet
+    electronic_spin:
+      multiplicity: 2 # doublet
+      state: "ground-state"
     conformations: [conformations:3]
-    # Sometimes, the employed canoncial identifier is not sufficient to distinguish
-    # molecular entities. Here, for example, InChI cannot distinguish the cis-trans-
-    # isomerism of this radical. In such a case, one can add the defining_conformations
-    # field which unlike the conformations field will contain all possible conformations
-    # and
+    # Here, for example, InChI cannot distinguish the cis-trans-
+    # isomerism of this radical. 
     defining_conformations: [conformations:3]
-  XXXXXXXXXXXXXX-XXXXXXXXXX-F:
-    description: trans-HC*=NH
-    constitution: {C: 1, N: 1, H: 2}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+  trans-HC=NH:
+    inchi_fixedh:
         value: "InChI=1/CH2N/c1-2/h1-2H"
     conformations: [conformations:6]
     defining_conformations: [conformations:6]
-    electronic_state:
-      charge: 0
-      spin: 1 # doublet
-  XXXXXXXXXXXXXX-XXXXXXXXXX-G:
-    description: CH2NH
-    constitution: {C: 1, N: 1, H: 3}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
-        value: "InChI=1/CH3N/c1-2/h2H,1H2"
-    conformations: [conformations:0]
-    electronic_state:
-      charge: 0
-      spin: 0
-  XXXXXXXXXXXXXX-XXXXXXXXXX-H:
+    electronic_spin:
+      multiplicity: 2 # doublet
+      state: "ground-state"
+  HOOH:
     description: HOOH
-    constitution: {O: 2, H: 2}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+    inchi_fixedh:
         value: "InChI=1/H2O2/c1-2/h1-2H"
     conformations: [conformations:2]
-    electronic_state:
-      charge: 0
-      spin: 0
-  XXXXXXXXXXXXXX-XXXXXXXXXX-I:
+    electronic_spin:
+      # For a ground state, the number of unpaired electrons will be computed 
+      # automatically and does not have to be explicitly supplied.
+      # n_unpaired: 0
+      multiplicity: 1
+      state: "ground-state"
+  OOH:
     description: OOH*
-    constitution: {O: 2, H: 1}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+    inchi_fixedh:
         value: "InChI=1/HO2/c1-2/h1H"
     conformations: [conformations:1]
-    electronic_state:
-      charge: 0
-      spin: 1 # doublet
-  XXXXXXXXXXXXXX-XXXXXXXXXX-J:
+    electronic_spin:
+      multiplicity: 2 # doublet
+      state: "ground-state"
+  PRC3:
     description: PRC3
-    constitution: {C: 1, N: 1, H: 4, O: 2}
-    connectivity: {}
-    identifiers:
-      - type: "InChI-fixedH"
+    inchi_fixedh:
         value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
     conformations: [conformations:8]
-    electronic_state:
-      charge: 0
-      spin: 0
+    electronic_spin:
+      multiplicity: 1
+      state: "ground-state"
+    defining_conformations: [conformations:8]
 # Conformations and their relations describe the PES in RMMD
 conformations:
-  - description: "CH2NH minimum"
+  - description: "CH2NH"
+    type: "minimum"
     # each conformation can be linked to multiple calculations, e.g., at different
     # levels of theory
+    type:  "minimum"
     calculations: [calculations:0, calculations:1]
-  - description: "*OOH minimum"
+  - description: "*OOH"
+    type: "minimum"
     calculations: [calculations:2]
-  - description: "HOOH minimum"
+  - description: "HOOH"
+    type: "minimum"
     calculations: [calculations:3]
-  - description: "cis-HC*=NH minimum"
+  - description: "cis-HC*=NH"
+    type: "minimum"
     calculations: [calculations:4]
-  - description: "trans-HC*=NH minimum"
+  - description: "trans-HC*=NH"
+    type: "minimum"
     calculations: [calculations:5]
-  - description: "CH2N* minimum"
+  - description: "CH2N*"
+    type: "minimum"
     calculations: [calculations:6]
-  - description: "pre-reactive complex 1 - PRC1 minimum"
+  - description: "pre-reactive complex 1 - PRC1"
+    type: "minimum"
     calculations: [calculations:7]
-  - description: "PRC2 minimum"
+  - description: "PRC2"
+    type: "minimum"
     calculations: [calculations:8]
-  - description: "PRC3 minimum"
+  - description: "PRC3"
+    type: "minimum"
     calculations: [calculations:9]
   - description: "TS7"
+    identifiers:
+      # We can add identifiers to saddle points as well, but only few can really
+      # represent them. Here, the saddlepoint is described by an InChI that defines two
+      # fragments. A more suitable identifier would be AMChI
+      - type: "InChI-fixedH"
+        value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
+    type: "saddle-point"
     calculations: [calculations:10]
   - description: "TS8"
+    type: "saddle-point"
     calculations: [calculations:12]
   - description: "TS9"
+    type: "saddle-point"
 pes_relations:
   # PRC1 - TS7 - cis-CH=NH, validated by an IRC scan
   - saddle_point: conformations:9
@@ -232,7 +216,7 @@ calculations:
   - type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -240,7 +224,7 @@ calculations:
   - type: qm-energy
     input:
       level_of_theory: "DLPNO-CCSD(T)-F12/cc-pVTZ-F12"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "ORCA"
       version: "6.0.1"
@@ -248,7 +232,7 @@ calculations:
   - type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 1}
+      electronic_state: {charge: 0, multiplicity: 2}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -256,7 +240,7 @@ calculations:
   - type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -264,7 +248,7 @@ calculations:
   - type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 1}
+      electronic_state: {charge: 0, multiplicity: 2}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -272,7 +256,7 @@ calculations:
   - type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 1}
+      electronic_state: {charge: 0, multiplicity: 2}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -280,7 +264,7 @@ calculations:
   - type: qm-optimization
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 1}
+      electronic_state: {charge: 0, multiplicity: 2}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -311,7 +295,7 @@ calculations:
       version: "16 Rev. C.01"
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "both"
       # saddle point found by calculation 10 is used as starting point
       ts: {output_of: calculations:10}
@@ -319,7 +303,7 @@ calculations:
   - type: qm-ts
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -330,7 +314,7 @@ calculations:
       version: "16 Rev. C.01"
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "forward"
     output: ["./data/irc8_forward.log"]
   - type: qm-irc
@@ -339,13 +323,13 @@ calculations:
       version: "16 Rev. C.01"
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
       scan_type: "reverse"
     output: ["./data/irc8_reverse.log"]
   - type: qm-ts
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
     software:
       name: "Gaussian"
       version: "16 Rev. C.01"
@@ -353,7 +337,7 @@ calculations:
   - type: qm-scan
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
-      electronic_state: {charge: 0, spin: 0}
+      electronic_state: {charge: 0, multiplicity: 1}
       # the distance between the oxygen (atom 0) and nitrogen (atom 5) was constrainet
       scan_coordinates: [[0,5]]
       scan_type: "relaxed"

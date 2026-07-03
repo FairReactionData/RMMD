@@ -87,7 +87,8 @@ class _StandardInChI(_StringIdentifierBase, _ValidationStrategyMixin):
         return MolBlockToInchi(mol_block)  # type: ignore
 
 
-class _FixedHInChI(_StringIdentifierBase, _ValidationStrategyMixin):
+# public, as this is an important identifier type used in other modules
+class FixedHInChI(_StringIdentifierBase, _ValidationStrategyMixin):
     """IUPAC International Chemical Identifier generated with the fixed-H layer."""
 
     type: Literal["InChI-fixedH"] = "InChI-fixedH"
@@ -139,8 +140,11 @@ StringIdentifier: TypeAlias = Annotated[
     _StandardInChI
     | _SMILES
     | _CustomStringIdentifier
-    | _FixedHInChI
+    | FixedHInChI
     | _StandardInChIKey,
     Field(discriminator="type"),
 ]
-"""string identifier for a molecular entity"""
+"""
+string identifier for a molecular entity including connectivity, stereochemistry and
+total charge.
+"""
