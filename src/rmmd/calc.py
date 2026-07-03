@@ -1,3 +1,20 @@
+"""Tracking data provenance through calculations
+
+Module contains models to define calculations with specific input and output data.
+Calculations are RMMD's main mechanism to track the provenance of model data from from
+ab-initio quantum chemistry calculations to parameters of empirical models for
+thermodynamic and kinetic properties.
+The mechanism is similar to the Metadata4Ing ontology [1] in the context of which
+calculations would be a specialization of "processing step".
+
+
+[1] Lanza, G., Iglezakis, D., Fuhrmans, M., Jordan, M., Farnbacher, B., Sosa Rodriguez,
+    A. A., Leimer, S., Hachinger, S., Arndt, S., Terzijska, D., Wellmann, A.,
+    Theissen-Lipp, J., & Munke, J. (2025). Metadata4Ing: An ontology for describing the
+    generation of research data within a scientific activity. Zenodo.
+    https://doi.org/10.5281/zenodo.17856129
+"""
+
 from __future__ import annotations
 
 from typing import Annotated, Generic, Literal, TypeVar
