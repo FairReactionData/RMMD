@@ -428,6 +428,7 @@ rate_constants:
     - 1000000.0
     - 10000000.0
     - 100000000.0
+    # converted units from table 1 in the paper and fixed a typo
     k:
     - - 686.5240466399999
       - 118.636172972
@@ -460,8 +461,6 @@ rate_constants:
   fitted_rate_constants:
     type: pressure-dependent Arrhenius
     references: null
-    source:
-    - example-source
     A:
     - 66346509.18745152
     - 3.8117194651184603e+21
