@@ -17,7 +17,7 @@ class _RateCoefficientBase(HasKeyMixin):
 
     references: list[CitationKey] | None = None
     """Related literature describing how the data was obtained. Can be used in addition to the references list of the main dataset/Schema."""
-    source: list[CitationKey]
+    sources: list[CitationKey] | None = None
     """Literature reference where the data was obtained from."""
 
 

@@ -413,7 +413,7 @@ calculations:
 rate_constants:
   table_1_ali_et_al:
     type: rate table
-    source:
+    sources:
     - ali2016
     T:
     - 200.0
@@ -460,7 +460,6 @@ rate_constants:
       - 386019.222716
   fitted_rate_constants:
     type: pressure-dependent Arrhenius
-    references: null
     A:
     - 66346509.18745152
     - 3.8117194651184603e+21
