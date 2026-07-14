@@ -4,9 +4,9 @@ from typing import Annotated, Literal, TypeAlias
 from pydantic import Field
 
 from ._base import RmmdBaseModel
-from .calc import NestedCalculation
+from .calc import GeneralCalculation, NestedCalculation
 from .keys import CitationKey
-from .kinetics import RateCoefficient
+from .kinetics import KineticsParameterFitting, RateCoefficient
 from .metadata import Doi, LocalCffFile, Metadata, Reference
 from .pes import Conformation, ConformationRelation, QmCalculation
 from .registry import Registry
@@ -16,6 +16,7 @@ from .thermo import (
     EmpiricalThermo,
     ReferenceState,
     TabularThermo,
+    ThermoParameterFitting,
     ThermoQmCalc,
 )
 
@@ -25,7 +26,12 @@ _ThermoItem: TypeAlias = Annotated[
 ]
 
 _CalculationItem: TypeAlias = Annotated[
-    QmCalculation | ThermoQmCalc | NestedCalculation,
+    QmCalculation
+    | ThermoQmCalc
+    | NestedCalculation
+    | GeneralCalculation
+    | ThermoParameterFitting
+    | KineticsParameterFitting,
     Field(discriminator="type"),
 ]
 
@@ -85,7 +91,7 @@ class Schema(RmmdBaseModel, extra="forbid"):
     e.g., NASA polynomials"""
     transport: TransportRegistry = Field(default_factory=TransportRegistry)
     """transport properties for species in the dataset"""
-    rate_coefficients: RateCoefficientsRegistry = Field(
+    rate_constants: RateCoefficientsRegistry = Field(
         default_factory=RateCoefficientsRegistry
     )
     """kinetic models for reactions in the dataset, e.g., Arrhenius expressions or rate tables"""
@@ -96,8 +102,6 @@ class Schema(RmmdBaseModel, extra="forbid"):
     pes_relations: PesRelationRegistry = Field(default_factory=PesRelationRegistry)
     """relations between conformations, e.g., which conformations are considered to be
     the same, which conformations are connected by an IRC path, ..."""
-    calculations: CalculationRegistry = Field(default_factory=CalculationRegistry)
-    """quantum chemistry calculations"""
 
     ### metadata ###
     schema_version: Literal["0.1.0b0"] = "0.1.0b0"
@@ -109,8 +113,11 @@ class Schema(RmmdBaseModel, extra="forbid"):
     such as a CITATION.CFF
     """
 
+    ### provenance ###
     literature: dict[CitationKey, Doi | Reference] = Field(default_factory=dict)
     """table of all literature referenced in this file"""
+    calculations: CalculationRegistry = Field(default_factory=CalculationRegistry)
+    """quantum chemistry calculations"""
 
 
 Schema.model_rebuild()

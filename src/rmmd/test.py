@@ -100,11 +100,14 @@ def assert_model_validation_errors(
                 actual_err = actual_errors[i]
                 loc = actual_err["loc"]
                 errmsg = actual_err["msg"]
+                input = actual_err["input"]
 
                 if loc:
                     msg += f"    {_err_loc_str(loc)}: {errmsg}\n"
+                    msg += f"        input: {input}\n"
                 else:
                     msg += f"    {errmsg}\n"
+                    msg += f"        input: {input}\n"
 
     if unencountered_expected_errids:
         msg += "Expected error(s) missing:\n"

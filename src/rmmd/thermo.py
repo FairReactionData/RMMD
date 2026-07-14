@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from annotated_types import MaxLen, MinLen
-from pydantic import model_validator
+from pydantic import Discriminator, Tag, model_validator
 
 from ._base import RmmdBaseModel
-from .calc import CalculationBase
+from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase
 from .keys import CalcIndex, CitationKey, ConformationIndex, SpeciesName, ThermoIndex
 from .registry import HasKeyMixin
 
@@ -95,40 +95,6 @@ class _HasReferenceStateMixin(RmmdBaseModel):
 ###############################################################################
 
 
-class FittedToLiterature(RmmdBaseModel):
-    """literature sources that the coefficients of this model were fitted to"""
-
-    sources: list[CitationKey]
-    """literature sources that the coefficients of this model were fitted to"""
-
-
-class FittedToThermoData(RmmdBaseModel):
-    """thermodynamic data that the coefficients of this model were fitted to"""
-
-    thermo: list[ThermoIndex]
-    """thermodynamic data that the coefficients of this model were fitted to"""
-
-
-class FittedToCalculationOutput(RmmdBaseModel):
-    """calculation output that the coefficients of this model were fitted to"""
-
-    output_of: list[CalcIndex]
-    """calculation output that the coefficients of this model were fitted to"""
-
-
-class _FittedToMixin(RmmdBaseModel):
-    """inherit from this class to get fields related to fitting provenance"""
-
-    fitted_to: (
-        FittedToLiterature | FittedToThermoData | FittedToCalculationOutput | None
-    ) = None
-    """data/model that the coefficients of this model were fitted to.
-
-    If the model was fitted to data form this dataset, an integer (starting at
-    0) to indicate the index of the data in the thermo list of this species.
-    """
-
-
 class _CoefficientsTRangesMixin(RmmdBaseModel):
     T_ranges: list[tuple[float, float]]
     coefficients: list[list[float]]
@@ -145,7 +111,6 @@ class _CoefficientsTRangesMixin(RmmdBaseModel):
 
 class Nasa7(
     _ThermoPropertyBase,
-    _FittedToMixin,
     _HasReferenceStateMixin,
     _CoefficientsTRangesMixin,
 ):
@@ -161,7 +126,6 @@ class Nasa7(
 
 class Nasa9(
     _ThermoPropertyBase,
-    _FittedToMixin,
     _HasReferenceStateMixin,
     _CoefficientsTRangesMixin,
 ):
@@ -177,7 +141,6 @@ class Nasa9(
 
 class Shomate(
     _ThermoPropertyBase,
-    _FittedToMixin,
     _HasReferenceStateMixin,
     _CoefficientsTRangesMixin,
 ):
@@ -207,7 +170,91 @@ class ConstantCp(_ThermoPropertyBase, _HasReferenceStateMixin):
     """constant heat capacity in J/(mol K)"""
 
 
-EmpiricalThermo = Nasa7 | Shomate
+EmpiricalThermo = Nasa7 | Shomate | ConstantCp | Nasa9
+
+
+###############################################################################
+# fitting provenance
+###############################################################################
+
+
+class FittedToLiterature(RmmdBaseModel):
+    """literature sources that the coefficients of this model were fitted to"""
+
+    sources: list[CitationKey]
+    """literature sources that the coefficients of this model were fitted to"""
+
+
+class FittedToThermoData(RmmdBaseModel):
+    """thermodynamic data that the coefficients of this model were fitted to"""
+
+    thermo: list[ThermoIndex]
+    """thermodynamic data that the coefficients of this model were fitted to"""
+
+
+class FittedToOtherCalculation(RmmdBaseModel):
+    """calculation output that the coefficients of this model were fitted to"""
+
+    output_of: list[CalcIndex]
+    """calculation output that the coefficients of this model were fitted to"""
+
+
+# annotated union for better error messages:
+def _fitted_to_discriminator(value: dict | RmmdBaseModel) -> str | None:
+    if isinstance(value, dict):
+        if "sources" in value:
+            return "literature"
+        elif "thermo" in value:
+            return "thermo data"
+        elif "output_of" in value:
+            return "calculation output"
+
+    else:
+        if hasattr(value, "sources"):
+            return "literature"
+        elif hasattr(value, "thermo"):
+            return "thermo data"
+        elif hasattr(value, "output_of"):
+            return "calculation output"
+
+    # Could not determine the type, return None to let Pydantic handle the error
+    return None
+
+
+_FittedToUnion = Annotated[
+    Annotated[FittedToLiterature, Tag("literature")]
+    | Annotated[FittedToThermoData, Tag("thermo")]
+    | Annotated[FittedToOtherCalculation, Tag("calculation output")],
+    Discriminator(_fitted_to_discriminator),
+]
+
+
+class ThermoParameterFittingInput(CalculationInputBase):
+    """input data for a fitting calculation"""
+
+    fitted_to: _FittedToUnion | None = None
+    """data/model that the coefficients of this model were fitted to.
+
+    If the model was fitted to data form this dataset, an integer (starting at
+    0) to indicate the index of the data in the thermo list of this species.
+    """
+
+
+class ThermoParameterFittingOutput(CalculationOutputBase):
+    """output data for a fitting calculation"""
+
+    thermo: ThermoIndex
+    """model parameters that were fitted to the data"""
+
+    # TODO add fit quality metric
+
+
+class ThermoParameterFitting(
+    CalculationBase[ThermoParameterFittingInput, ThermoParameterFittingOutput]
+):
+    """calculation of thermochemical properties derived from fitting to data"""
+
+    type: Literal["thermo param fit"] = "thermo param fit"
 
 
 ###############################################################################
@@ -288,24 +335,13 @@ class ThermoTableNoRef(_ThermoTableBase):
 TabularThermo = ThermoTable | ThermoTableNoRef
 
 ###############################################################################
-# quantum chemistry models
+# schema for supplying thermochemical data derived from quantum chemistry calculations
+#
+# ThermoQmCalc can provide typical data used in addition to data from quantum chemistry
+# calculations (e.g., frequency scaling factors) in a structure way. Due to the many
+# different ways to compute thermochemical properties from quantum chemistry
+# calculations, users may still have to restort to using the GeneralCalculation class.
 ###############################################################################
-
-
-class QmThermoCalcInput(RmmdBaseModel):
-    """data for thermochemical calculations derived from quantum
-    chemistry calculations
-    """
-
-    conformations: dict[ConformationIndex, ConformationThermoData]
-    """data for conformations that are explicitly modeled, e.g., via RRHO or
-    by using their electronic energy for computing the conformer mixture
-    composition.
-    The degeneracy of enantiomeric conformations can be provided as an integer
-    in the second element of the tuple.
-    """
-    internal_rotors: list[_NDRotorData] | None = None
-    """data for internal rotors"""
 
 
 class _SingleRotorData(RmmdBaseModel):
@@ -332,7 +368,7 @@ class _NDRotorData(RmmdBaseModel):
     n may be 1 for a hindered rotor
     """
 
-    rotos: Annotated[list[_SingleRotorData], MinLen(1)]
+    rotors: Annotated[list[_SingleRotorData], MinLen(1)]
 
 
 class ConformationThermoData(RmmdBaseModel):
@@ -374,7 +410,30 @@ class ConformationThermoData(RmmdBaseModel):
     """
 
 
-class ThermoQmCalc(CalculationBase[QmThermoCalcInput, ThermoIndex]):
+class ThermoQmCalcInput(CalculationInputBase):
+    """data for thermochemical calculations derived from quantum
+    chemistry calculations
+    """
+
+    conformations: dict[ConformationIndex, ConformationThermoData]
+    """data for conformations that are explicitly modeled, e.g., via RRHO or
+    by using their electronic energy for computing the conformer mixture
+    composition.
+    The degeneracy of enantiomeric conformations can be provided as an integer
+    in the second element of the tuple.
+    """
+    internal_rotors: list[_NDRotorData] | None = None
+    """data for internal rotors"""
+
+
+class ThermoQmCalcOutput(CalculationOutputBase):
+    """Output of a thermo-from-QM calculation."""
+
+    thermo: ThermoIndex
+    """Reference to the thermo entry in the dataset produced by this calculation."""
+
+
+class ThermoQmCalc(CalculationBase[ThermoQmCalcInput, ThermoQmCalcOutput]):
     """calculation of thermochemical properties derived from quantum chemistry"""
 
     type: Literal["thermo-from QM"] = "thermo-from QM"
