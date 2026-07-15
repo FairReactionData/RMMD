@@ -39,6 +39,9 @@ def _load_examples():
 
     example_files = _list_all_example_files()
 
+    # README.md does not define a test case
+    example_files.remove(_EXAMPLES_DIR / "README.md")
+
     for file in example_files:
         try:
             with open(file, "r", encoding="utf-8") as f:
