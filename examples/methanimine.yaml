@@ -46,9 +46,9 @@ reactions:
   reactions:0:
     reactants: [CH2NH, OOH]
     products: [CH2N, HOOH]
-  rate_constants:
-    - table_1_ali_et_al
-    - fitted_rate_constants
+    rate_constants:
+      - table_1_ali_et_al
+      - fitted_rate_constants
 # Entities must have unique keys and are used to uniquely identify species, preferably
 # by using canonical identifiers such as InChIKeys.
 entities:

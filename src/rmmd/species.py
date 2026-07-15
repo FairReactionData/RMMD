@@ -21,12 +21,12 @@ from .identifiers import FixedHInChI
 from .keys import (
     ConformationIndex,
     EntityKey,
+    KineticsIndex,
     ReactionIndex,
     SpeciesName,
     ThermoIndex,
     TransportIndex,
 )
-from .kinetics import RateCoefficient
 from .registry import HasKeyMixin
 
 UNKOWN_GROUND_STATE = "unkown-electronic-ground-state"
@@ -168,7 +168,7 @@ class Reaction(HasKeyMixin):
 
     thermo: list[ThermoIndex] = Field(default_factory=list)
     """thermochemical properties for this reaction"""
-    rate_constants: list[RateCoefficient] = Field(default_factory=list)
+    rate_constants: list[KineticsIndex] = Field(default_factory=list)
     """rate coefficients for this reaction"""
 
     def __str__(self) -> str:
