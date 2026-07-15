@@ -3,16 +3,23 @@ metadata:
   title: Methanimine example data
   license: MIT
   description: >-
-   This example demonstrates how RMMD can distinguish species that the employed identifier
-    (here InChI) cannot distinguish by assigning defining_conformations. Additionally,
-    the example demonstrated how a reaction can link species on the "mechnism level"
-    while individual conformations can be related to each other on the "PES level". The
-    qualitative, partial PES shown here was taken from ali2016 (cf. Figure 4 in that
-    publication).
-# the literature list contains the references used in this dataset. To indicate
-# that a citation belongs to/describes this dataset, use the "references" list.
+    RMMD uses a fixedH-InChI to define the stereochemistry and connectivity of a
+    molecular entity. However, in some cases, the fixedH-InChI is not sufficient to
+    distinguish different species. This example demonstrates the use of the
+    defining_conformations field for such cases. Additionally,
+    the example demonstrates how a reaction can link species on the "mechanism level"
+    while individual conformations can be related to each other on the "PES level".
+  # Literature describing this dataset, typically the associated paper, can be provided
+  # here. The references are defined in the literature section below. This is just
+  # an example, the qualitative, partial PES shown here was actually taken from ali2016
+  # (cf. Figure 4 in that publication).
+  references: [doe2016]
+# The literature list contains the references used in this dataset, e.g., to provide
+# sources for data taken from literature. To indicate that a citation
+# belongs to/describes this dataset, use the "references" list in metadata above.
 literature:
   ali2016: 10.1021/acs.jpca.6b06531
+  doe2016: 10.0000/example-doi12345
 # Species and Reactions represent the "mechanism layer" of RMMD
 species:
   # Species can be assigned (almost) arbitrary names like in a CHEMKIN file. The
@@ -39,6 +46,9 @@ reactions:
   reactions:0:
     reactants: [CH2NH, OOH]
     products: [CH2N, HOOH]
+  rate_constants:
+    - table_1_ali_et_al
+    - fitted_rate_constants
 # Entities must have unique keys and are used to uniquely identify species, preferably
 # by using canonical identifiers such as InChIKeys.
 entities:
@@ -181,7 +191,7 @@ conformations:
     description: "TS7"
     identifiers:
       # We can add identifiers to saddle points as well, but only few can really
-      # represent them. Here, the saddlepoint is described by an InChI that defines two
+      # represent them. Here, the saddle point is described by an InChI that defines two
       # fragments. A more suitable identifier would be AMChI
       - type: "InChI-fixedH"
         value: "InChI=1/CH2N.HO2/c2*1-2/h1-2H;1H"
@@ -230,8 +240,8 @@ pes_relations:
     end_points:
       - [conformations:8]
       - [conformations:0, conformations:1]
-# The following calculations were not actually performed but serve as example of how to
-# link calculations (and thereby, concrete geometries) to conformations and their
+# The following calculations were not actually performed but serve as an example of how
+# to link calculations (and thereby, concrete geometries) to conformations and their
 # relations
 calculations:
   calculations:0:
@@ -392,7 +402,7 @@ calculations:
     input:
       level_of_theory: "B3LYP-D3BJ/6-311G*"
       electronic_state: {charge: 0, multiplicity: 1}
-      # the distance between the oxygen (atom 0) and nitrogen (atom 5) was constrainet
+      # the distance between the oxygen (atom 0) and nitrogen (atom 5) was constrained
       scan_coordinates: [[0,5]]
       scan_type: "relaxed"
     software:
