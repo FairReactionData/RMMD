@@ -7,6 +7,8 @@ metadata: ./CITATION.cff
 species:
   C4H10:
     names: ["Butane"]
+    # Entities are referenced by their key in the entities collection below. Here, we
+    # use the InChIKey of butane as the key for the entity.
     entities: [IJDNQMDRQITEOD-UHFFFAOYNA-N]
     thermo: [thermo:0, thermo:1, thermo:2]
 entities:
@@ -33,8 +35,14 @@ thermo:
     p: [100_000]
     H: [[125.6]]
     sources: [pittam-1972]
-    reference_state:         # this reference state indicated that we
-      T: 298.15    # are using standard enthalpies of formation
+    # Even absolute thermodynamic data is not truly absolute, but relative to a
+    # reference state. A default reference state can be defined for the full dataset
+    # which itself defaults to 1 bar, 298.15 K and the most stable form (allotrope) of
+    # each element. For each thermodynamic model we can also supply a different
+    # reference state (different from the dataset reference state) via this field:
+    reference_state:
+      # in this example we just use the default reference state
+      T: 298.15
       p: 100_000
       element_reference: "most stable form"
   thermo:2:
@@ -62,7 +70,7 @@ conformations:
         value: "InChI=1S/C4H10/c1-3-4-2/h3-4H2,1-2H3"
       - type: "InChIKey"
         value: "IJDNQMDRQITEOD-UHFFFAOYSA-N"
-  # saddle points as the PES can also be added (and linked to calculations)
+  # saddle points on the PES can also be added (and linked to calculations)
   conformations:2:
     description: "trans-gauche transition state of butane"
     calculations: [calculations:4]
@@ -81,6 +89,9 @@ calculations:
       name: "ORCA"
       version: "5.0.3"
     input:
+      # There is no closed vocabulary for levels of theory in RMMD, so we recommend
+      # to provide a reference to a publication that describes the level of theory in
+      # detail (e.g., a DOI) with the dataset
       level_of_theory: "B3LYP-D3BJ/def2-TZVP"
       electronic_state: {charge: 0, multiplicity: 1}
     output:

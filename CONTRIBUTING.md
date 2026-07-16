@@ -2,7 +2,7 @@
 
 Thank you for taking the time to contribute to this project.
 
-## Reporting Bugs & Requesting Features
+## Tell Us About Your Data, Report Bugs & Request Features
 
 If you encounter any issues or have suggestions for new features, please create an issue:
 
@@ -11,7 +11,8 @@ If you encounter any issues or have suggestions for new features, please create 
 
 ## Code Contribution & Review Process
 
-To know which work packages are open for contribution, please refer to our issue tracker. Contributions can be discussed and prioritized within our team.
+Issues marked as `help-wanted` are open for contribution.
+Please let us know, if you are interessted in working on an issue so that we can coordinate the work.
 
 > [!NOTE]
 > Details regarding decision-making and review processes are still to be determined. We encourage open discussions around design choices.
@@ -35,30 +36,19 @@ These hooks are also run with GitHub Actions, so make sure they pass locally bef
 
 ## Testing & Examples
 
-Testing is crucial for maintaining quality across all parts of the schema. We utilize example YAML files located in the `examples/` directory to test the schema. You simply need to run pytest to test the example files. These example files also serve as documentation during this early stage of development.
-So, when adding new models/classes, please add corresponding tests/examples.
+We are using [pytest](https://docs.pytest.org/en/7.4.x/) to test the schema and API.
+Simply run `pytest` in the root directory to run all tests.
+Tests are also run automatically on GitHub Actions for each pull request.
+
+There are three ways to add tests:
+
+1. Create an `examples/` file: All files in the `examples/` directory are automatically tested against the schema. You can add new examples to this directory to test your changes.
+2. Add a yaml file to `tests/rmmd`: In contrast to files in the `examples/` directory, these files can be used to test specific parts of the schema and allow testing of expected validation errors for invalid files. Each yaml file in this directory must include a metadata block at the beginning that describes the test and specifies, if and how validation should fail.
+3. Add a [pytest `test_*.py` file](https://docs.pytest.org/en/stable/getting-started.html#create-your-first-test) in `tests/rmmd`: These files can be used to write more complex tests that require Python code, i.e., if you want to test parts of the Python API.
+
 
 > [!TIP]
 > It may be easier to start with test/example files first to understand how the schema will be used before writing the Pydantic model.
-
-For each example file, include a metadata block at the beginning that describes the test and specifies, if and how validation should fail.
-Expected validation errors are provided as a list of pairs of strings called failures:
-
-``` yaml
---- # test setup
-description: "Here, one can describe the test"
-failures:   # expected failures can be provided as a tuple of a location in the
-            # data and a regular expression that matches the expected error
-            # message
-  - ["species.CH4.entities", "List should have at least 1 item after validation, not 0"]
---- # begin of the actual example
-schema_version: 0.1.0b0
-license: MIT
-species:
-  CH4:
-    name: CH4
-    entities: []  # empty list is not allowed  (see expected error above)
-```
 
 ## Conventions
 
@@ -72,6 +62,8 @@ consistent with the [PEP8 Style Guide](https://peps.python.org/pep-0008/), which
 worth consulting if you are new to Python.
 
 ### Units
+
+*These rules will change with #37*
 
 The schema models both molecular and macroscopic quantities, so be cautious about units:
 - Document units in square brackets within the docstring of a field.
@@ -93,7 +85,7 @@ The schema models both molecular and macroscopic quantities, so be cautious abou
 
 ### Naming Conventions
 
-- Field names for (literature) references: References for related literature that describes the data (e.g., associated papers) should be called `references` whereas references that give the source for some data should be called `source`. Both have type `list[CitationKey]`
+- Field names for (literature) references: References for related literature that describes the data (e.g., associated papers) should be called `references` whereas references that give the source for some data should be called `sources`. Both have type `list[CitationKey]`
 - Base model names intended not for direct use should start with an underscore and end with `Base`, e.g., `_ThermoPropertyBase`.
 - ...
 
