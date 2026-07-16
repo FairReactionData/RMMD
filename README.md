@@ -8,7 +8,7 @@ RMMD should help researchers to publish their reaction model data in a [FAIR](ht
 ## Challenges With Common Publication Practices
 
 In the past decades, researchers have produced a lot of reaction models[^rm-def] but often without relevant metadata.
-The emergence of automated tool for reaction model generation (e.g, RMG, Kinbot, ChemTraYzer, ...) lead to the production and publication of even more data.
+The emergence of automated tools for reaction model generation (e.g, RMG, Kinbot, ChemTraYzer, ...) has lead to the production and publication of even more data.
 The models are usually provided as SI to papers or uploaded to public repositories as Chemkin or Cantera YAML files.
 However, the principal goal of these file formats was not the publication of data in a FAIR way (findable, accessible, interoperable and reusable) but rather to be used as input files for simulation codes.
 In practice this means that there are a bunch of problems other researchers can run into when trying to build upon this data:
@@ -26,7 +26,7 @@ Some FAIR principles can be implemented fairly <!-- ;) --> easily, e.g., by addi
 
 The above named problems, however, require the model creator to add additional information that is specific to the domain of reaction-modeling or chemistry (["rich" metadata](https://www.go-fair.org/fair-principles/r1-metadata-richly-described-plurality-accurate-relevant-attributes/)), e.g., a canonical species identifier .
 For this rich metadata to be really useful to others, it needs to be machine readable which requires a standardized way of supplying this kind of data.
-This is where metadata schemas come into play.
+This is where a metadata schema like RMMD comes into play.
 Since we could not find a suitable schema, e.g., on [https://fairsharing.org/](https://fairsharing.org/) or in the [Metadata Standards Catalog](https://rdamsc.bath.ac.uk/) we started developing a new one.
 
 ## Current Status & Contributing
