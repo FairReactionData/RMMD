@@ -9,7 +9,7 @@ from .keys import CitationKey, KineticsIndex
 from .registry import HasKeyMixin
 
 
-class _RateCoefficientBase(HasKeyMixin):
+class _RateCoefficientBase(HasKeyMixin, RmmdBaseModel):
     """Base class for rate coefficients"""
 
     type: str

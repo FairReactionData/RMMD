@@ -16,7 +16,7 @@ from pydantic import (
     model_validator,
 )
 
-from ._base import HasDescriptionMixin, RmmdFrozenBaseModel
+from ._base import HasDescriptionMixin, RmmdBaseModel, RmmdFrozenBaseModel
 from .identifiers import FixedHInChI
 from .keys import (
     ConformationIndex,
@@ -32,7 +32,7 @@ from .registry import HasKeyMixin
 UNKOWN_GROUND_STATE = "unkown-electronic-ground-state"
 
 
-class Species(HasKeyMixin):
+class Species(HasKeyMixin, RmmdBaseModel):
     """A chemical species."""
 
     names: list[str] = Field(default_factory=list)
@@ -50,7 +50,7 @@ class Species(HasKeyMixin):
     """transport properties for this species"""
 
 
-class MolecularEntity(HasKeyMixin, HasDescriptionMixin):
+class MolecularEntity(HasKeyMixin, HasDescriptionMixin, RmmdBaseModel):
     """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
     A molecular entity is defined by its constitution, connectivity, stereochemistry and electronic state. The former three are defined via a InChI-fixedH.
@@ -97,7 +97,7 @@ class MolecularEntity(HasKeyMixin, HasDescriptionMixin):
         return _get_charge_from_inchi(self.inchi_fixedh.value)
 
 
-class TransportProperty(HasKeyMixin):
+class TransportProperty(HasKeyMixin, RmmdBaseModel):
     """Transport property for species"""
 
     shape: Literal["atom", "linear", "nonlinear"]
@@ -126,7 +126,7 @@ Mixture: TypeAlias = list[tuple[SpeciesName, Annotated[float, Gt(0.0), Le(1.0)]]
 """a mixture of species with their respective mole fractions."""
 
 
-class Reaction(HasKeyMixin, HasDescriptionMixin):
+class Reaction(HasKeyMixin, HasDescriptionMixin, RmmdBaseModel):
     """A chemical reaction.
 
     High-level description/identification of a reaction (with a direction).

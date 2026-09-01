@@ -13,7 +13,7 @@ from .keys import CalcIndex, CitationKey, ConformationIndex, SpeciesName, Thermo
 from .registry import HasKeyMixin
 
 
-class _ThermoPropertyBase(HasKeyMixin):
+class _ThermoPropertyBase(HasKeyMixin, RmmdBaseModel):
     """Base class for thermochemical properties"""
 
     type: str
