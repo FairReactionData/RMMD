@@ -7,17 +7,17 @@ kept in sync with its position in the mapping.
 
 from __future__ import annotations
 
-from collections.abc import MutableMapping
 import itertools
+from collections.abc import MutableMapping
 from typing import ClassVar, Generic, Self, TypeVar
 
 from pydantic import Field, PrivateAttr, RootModel, model_validator
+
 from .keys import RegistryKey
 
-from ._base import RmmdBaseModel
 
-
-class HasKeyMixin(RmmdBaseModel):
+# Mixin is not a BaseModel subclass to avoid frozen/non-frozen MRO issues with Registry. Must be used before RmmdBaseModel in the MRO of any class that is both a Registry item and a BaseModel subclass.
+class HasKeyMixin:
     """Mixin for models stored in a Registry.
 
     Adds an optional ``key`` field that mirrors the item's mapping key.
@@ -27,7 +27,7 @@ class HasKeyMixin(RmmdBaseModel):
     key: RegistryKey | None = Field(exclude=True, default=None)
 
 
-T = TypeVar("T", bound=HasKeyMixin)
+T = TypeVar("T")
 
 
 class Registry(

@@ -102,7 +102,9 @@ InputT = TypeVar("InputT", bound=CalculationInputBase)
 OutputT = TypeVar("OutputT", bound=CalculationOutputBase)
 
 
-class CalculationBase(HasKeyMixin, HasDescriptionMixin, Generic[InputT, OutputT]):
+class CalculationBase(
+    HasKeyMixin, HasDescriptionMixin, RmmdBaseModel, Generic[InputT, OutputT]
+):
     """Base class for a calculation."""
 
     type: str
