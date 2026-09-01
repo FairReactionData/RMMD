@@ -22,7 +22,7 @@ from typing import Annotated, Generic, Literal, TypeVar
 from annotated_types import MinLen
 from pydantic import Discriminator, Tag
 
-from ._base import RmmdBaseModel
+from ._base import HasDescriptionMixin, RmmdBaseModel
 from .keys import CalcIndex, KineticsIndex, ThermoIndex, TransportIndex
 from .metadata import CitationKeyOrDirectReference, UrlNoDoiOrg
 from .registry import HasKeyMixin
@@ -102,7 +102,7 @@ InputT = TypeVar("InputT", bound=CalculationInputBase)
 OutputT = TypeVar("OutputT", bound=CalculationOutputBase)
 
 
-class CalculationBase(HasKeyMixin, Generic[InputT, OutputT]):
+class CalculationBase(HasKeyMixin, HasDescriptionMixin, Generic[InputT, OutputT]):
     """Base class for a calculation."""
 
     type: str
@@ -110,9 +110,6 @@ class CalculationBase(HasKeyMixin, Generic[InputT, OutputT]):
 
     software: Software
     """software used for the calculation"""
-
-    description: str | None = None
-    """description of the calculation, e.g., the method used"""
 
     references: list[CitationKeyOrDirectReference] | None = None
     """literature describing the calculation

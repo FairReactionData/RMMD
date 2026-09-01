@@ -7,7 +7,7 @@ from typing import Annotated, Literal
 from annotated_types import MaxLen, MinLen
 from pydantic import Discriminator, Tag, model_validator
 
-from ._base import RmmdBaseModel
+from ._base import HasDescriptionMixin, RmmdBaseModel
 from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase
 from .keys import CalcIndex, CitationKey, ConformationIndex, SpeciesName, ThermoIndex
 from .registry import HasKeyMixin
@@ -30,7 +30,7 @@ class _ThermoPropertyBase(HasKeyMixin):
 ###############################################################################
 
 
-class _ReferenceStateBase(RmmdBaseModel):
+class _ReferenceStateBase(HasDescriptionMixin, RmmdBaseModel):
     """base class for reference states"""
 
     T: float
@@ -46,10 +46,6 @@ class _ReferenceStateBase(RmmdBaseModel):
 
     - "most stable form": elements are in their most stable form at the given T and p
     - "quantum chemistry": state where all electrons and nuclei are infinitely separated/non-interacting at 0 K.
-    """
-    description: str | None = None
-    """additional description of the reference state, e.g., level of theory
-    used for quantum chemistry ideal gas
     """
 
 

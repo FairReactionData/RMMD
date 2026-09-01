@@ -16,7 +16,7 @@ from pydantic import (
     model_validator,
 )
 
-from ._base import RmmdFrozenBaseModel
+from ._base import HasDescriptionMixin, RmmdFrozenBaseModel
 from .identifiers import FixedHInChI
 from .keys import (
     ConformationIndex,
@@ -50,7 +50,7 @@ class Species(HasKeyMixin):
     """transport properties for this species"""
 
 
-class MolecularEntity(HasKeyMixin):
+class MolecularEntity(HasKeyMixin, HasDescriptionMixin):
     """A distinct molecule, ion, radical, complex, ... with a specific rigid stereochemistry and electronic state.
 
     A molecular entity is defined by its constitution, connectivity, stereochemistry and electronic state. The former three are defined via a InChI-fixedH.
@@ -73,12 +73,6 @@ class MolecularEntity(HasKeyMixin):
     strucutre is flexible, this list is not guaranteed to be exhaustive as not
     all conformations may have been identified.
     """
-    description: str | None = None
-    """human-readable description of what this molecular entity represents"""
-
-    description: str | None = None
-    """human-readable description of what this molecular entity represents"""
-
     electronic_spin: _KnownElectronicSpin | Literal["unkown-electronic-ground-state"]
     """total electronic angular momentum of the molecule
 
@@ -132,7 +126,7 @@ Mixture: TypeAlias = list[tuple[SpeciesName, Annotated[float, Gt(0.0), Le(1.0)]]
 """a mixture of species with their respective mole fractions."""
 
 
-class Reaction(HasKeyMixin):
+class Reaction(HasKeyMixin, HasDescriptionMixin):
     """A chemical reaction.
 
     High-level description/identification of a reaction (with a direction).
@@ -140,9 +134,6 @@ class Reaction(HasKeyMixin):
 
     type: Literal["elementary", "stepwise", "unkown"] = "unkown"
     """type of the reaction"""
-
-    description: str | None = None
-    """human-readable description of the reaction"""
 
     reactants: Annotated[list[SpeciesName], MinLen(1)]
     products: Annotated[list[SpeciesName], MinLen(1)]
