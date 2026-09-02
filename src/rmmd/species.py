@@ -32,7 +32,7 @@ from .registry import HasKeyMixin
 UNKOWN_GROUND_STATE = "unkown-electronic-ground-state"
 
 
-class Species(HasKeyMixin, RmmdBaseModel):
+class Species(HasKeyMixin, HasDescriptionMixin, RmmdBaseModel):
     """A chemical species."""
 
     names: list[str] = Field(default_factory=list)

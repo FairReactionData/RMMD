@@ -399,7 +399,7 @@ pair is automatically sorted to simplify comparison in Python code.
 
 
 # private base class to avoid confusion with Relation TypeAlias below
-class _RelationBase(HasKeyMixin, RmmdFrozenBaseModel, frozen=True):
+class _RelationBase(HasKeyMixin, HasDescriptionMixin, RmmdFrozenBaseModel, frozen=True):
     calculations: list[CalcIndex] = Field(default_factory=list)
     """calculations used to confirm this relation.
 
