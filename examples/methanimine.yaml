@@ -114,8 +114,8 @@ entities:
   trans-HC=NH:
     inchi_fixedh:
         value: "InChI=1/CH2N/c1-2/h1-2H"
-    conformations: [conformations:6]
-    defining_conformations: [conformations:6]
+    conformations: [conformations:4]
+    defining_conformations: [conformations:4]
     electronic_spin:
       multiplicity: 2 # doublet
       state: "ground-state"
