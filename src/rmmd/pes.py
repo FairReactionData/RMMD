@@ -18,7 +18,7 @@ from pydantic import (
     model_validator,
 )
 
-from ._base import RmmdBaseModel, RmmdFrozenBaseModel
+from ._base import HasDescriptionMixin, RmmdBaseModel, RmmdFrozenBaseModel
 from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase, OutputOf
 from .elements import ElementSymbol
 from .identifiers import StringIdentifier
@@ -26,7 +26,7 @@ from .keys import CalcIndex, ConformationIndex
 from .registry import HasKeyMixin
 
 
-class ElectronicState(RmmdFrozenBaseModel, frozen=True):
+class ElectronicState(HasDescriptionMixin, RmmdFrozenBaseModel, frozen=True):
     """Definition of the electronic state"""
 
     charge: int
@@ -34,7 +34,8 @@ class ElectronicState(RmmdFrozenBaseModel, frozen=True):
     multiplicity: NonNegativeInt
     """2S+1 - two times the electron spin quantum number + 1"""
 
-    description: str | None = None
+    # override docstring
+    description: Annotated[str, MinLen(1)] | None = None
     """human-readable description of the electronic state, e.g. "ground state"
 
     This field is required, if spin is unknown. This field can also be used to
@@ -302,7 +303,7 @@ one may still reference a public dataset, but this is not required.
 ###############################################################################
 
 
-class Conformation(HasKeyMixin):
+class Conformation(HasKeyMixin, HasDescriptionMixin, RmmdBaseModel):
     """ "The spatial arrangement of the atoms affording distinction between
     stereoisomers which can be interconverted by rotations about formally
     single bonds." - IUPAC Goldbook, https://doi.org/10.1351/goldbook.C01258
@@ -316,9 +317,6 @@ class Conformation(HasKeyMixin):
     coordinates can be added as the output of quantum chemistry optimization
     calculations.
     """
-
-    description: str | None = None
-    """human-readable description of the point"""
 
     type: Literal["minimum", "saddle-point"]
     """type of the point on the PES"""
@@ -401,7 +399,7 @@ pair is automatically sorted to simplify comparison in Python code.
 
 
 # private base class to avoid confusion with Relation TypeAlias below
-class _RelationBase(HasKeyMixin, RmmdFrozenBaseModel, frozen=True):
+class _RelationBase(HasKeyMixin, HasDescriptionMixin, RmmdFrozenBaseModel, frozen=True):
     calculations: list[CalcIndex] = Field(default_factory=list)
     """calculations used to confirm this relation.
 

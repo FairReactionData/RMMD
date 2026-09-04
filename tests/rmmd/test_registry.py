@@ -2,16 +2,15 @@
 
 import pytest
 from pydantic import ValidationError
-
+from rmmd._base import RmmdBaseModel
 from rmmd.registry import HasKeyMixin, Registry
-
 
 ##############################################################################
 # Fixtures / helpers
 ##############################################################################
 
 
-class Item(HasKeyMixin):
+class Item(HasKeyMixin, RmmdBaseModel):
     name: str
 
 
