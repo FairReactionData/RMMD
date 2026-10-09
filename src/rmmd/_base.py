@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 RMMD_DEFAULT_CONFIG = ConfigDict(
     extra="forbid",
     use_attribute_docstrings=True,
-    # keep `frozen` unset here (not ``False``): to support a child freezing an unfrozen
+    # keep `frozen` unset here (not ``False``) to support a child freezing an unfrozen
     # RmmdBaseModel's fields by way of pydantic mergin the configs of all bases
 )
 """default configuration for all RMMD data models."""

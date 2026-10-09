@@ -17,7 +17,7 @@ from pydantic import (
     model_validator,
 )
 
-from ._base import RmmdBaseModel
+from ._base import NonEmptyOptionalStr, RmmdBaseModel
 from .cff.cff_1_2_0 import Doi as CffDoi
 from .cff.cff_1_2_0 import Entity, License, Person, Reference
 from .keys import CitationKey
@@ -97,7 +97,7 @@ class Metadata(RmmdBaseModel):
     """authors of the dataset"""
     title: Annotated[str, MinLen(1)]
     """name of the dataset"""
-    abstract: Annotated[str, MinLen(1)] | None = None
+    abstract: NonEmptyOptionalStr = None
     """description or abstract of the dataset, e.g., how it was obtained, contents, ...
     """
     keywords: list[str] = Field(default_factory=list)
