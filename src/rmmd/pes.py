@@ -18,7 +18,12 @@ from pydantic import (
     model_validator,
 )
 
-from ._base import RmmdBaseModel, RmmdFrozenBaseModel
+from ._base import (
+    HasDescriptionMixin,
+    NonEmptyOptionalStr,
+    RmmdBaseModel,
+    RmmdFrozenBaseModel,
+)
 from .calc import CalculationBase, CalculationInputBase, CalculationOutputBase, OutputOf
 from .elements import ElementSymbol
 from .identifiers import StringIdentifier
@@ -34,7 +39,8 @@ class ElectronicState(RmmdFrozenBaseModel, frozen=True):
     multiplicity: NonNegativeInt
     """2S+1 - two times the electron spin quantum number + 1"""
 
-    description: str | None = None
+    # specific docstring -> does not use HasDescriptionMixin
+    description: NonEmptyOptionalStr = None
     """human-readable description of the electronic state, e.g. "ground state"
 
     This field is required, if spin is unknown. This field can also be used to
@@ -302,7 +308,7 @@ one may still reference a public dataset, but this is not required.
 ###############################################################################
 
 
-class Conformation(HasKeyMixin):
+class Conformation(HasKeyMixin, HasDescriptionMixin, RmmdBaseModel):
     """ "The spatial arrangement of the atoms affording distinction between
     stereoisomers which can be interconverted by rotations about formally
     single bonds." - IUPAC Goldbook, https://doi.org/10.1351/goldbook.C01258
@@ -316,9 +322,6 @@ class Conformation(HasKeyMixin):
     coordinates can be added as the output of quantum chemistry optimization
     calculations.
     """
-
-    description: str | None = None
-    """human-readable description of the point"""
 
     type: Literal["minimum", "saddle-point"]
     """type of the point on the PES"""
@@ -358,7 +361,7 @@ class Conformation(HasKeyMixin):
 #   base class for relations.
 # - We do not use the `type: Literal["name of type"]`-pattern to not clutter the
 #   yaml file (cf. EquivalenceRelation which has only a single attribute).
-# - The relations are imutable and sorted to allow for easy comparisions in Python code
+# - conformations are imutable and sorted to allow for easy comparisions in Python code
 
 
 _ConformationIds: TypeAlias = Annotated[
@@ -401,7 +404,13 @@ pair is automatically sorted to simplify comparison in Python code.
 
 
 # private base class to avoid confusion with Relation TypeAlias below
-class _RelationBase(HasKeyMixin, RmmdFrozenBaseModel, frozen=True):
+class _RelationBase(
+    HasKeyMixin,
+    HasDescriptionMixin,
+    RmmdBaseModel,
+):
+    """base class for relations between conformations"""
+
     calculations: list[CalcIndex] = Field(default_factory=list)
     """calculations used to confirm this relation.
 
@@ -414,7 +423,7 @@ class _RelationBase(HasKeyMixin, RmmdFrozenBaseModel, frozen=True):
 
 
 # public to allow isinstance(relation, PathRelation) checks and "path-only" type hints
-class PathRelation(_RelationBase, frozen=True):
+class PathRelation(_RelationBase):
     """relations presenting a path on the PES"""
 
     end_points: _ConformationsPair
@@ -424,7 +433,7 @@ class PathRelation(_RelationBase, frozen=True):
     """the saddle point, or "col", of the path."""
 
 
-class SaddlePointRelation(PathRelation, frozen=True):
+class SaddlePointRelation(PathRelation):
     """relates a saddle point on the PES to the minima that it connects.
 
     Note, that `minimum1` and `minimum2` should point to minima and not simply IRC endpoints, i.e. the last geometries of an IRC scan. IRC endpoint geometries can be included as output of IRC calculations and linked to this relation.
@@ -434,7 +443,7 @@ class SaddlePointRelation(PathRelation, frozen=True):
     """saddle point, or "col", of the path"""
 
 
-class NoBarrierRelation(PathRelation, frozen=True):
+class NoBarrierRelation(PathRelation):
     """relates multiple minima on a PES that are connected by a path without a barrier.
 
     This relation is typically used for two fragments, which are minima on their own PES

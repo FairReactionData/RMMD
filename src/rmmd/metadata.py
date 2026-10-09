@@ -17,10 +17,10 @@ from pydantic import (
     model_validator,
 )
 
-from ._base import RmmdBaseModel
-from .keys import CitationKey
+from ._base import NonEmptyOptionalStr, RmmdBaseModel
 from .cff.cff_1_2_0 import Doi as CffDoi
 from .cff.cff_1_2_0 import Entity, License, Person, Reference
+from .keys import CitationKey
 
 Doi: TypeAlias = CffDoi
 """Digital Object Identifier (DOI) for a publication or dataset.
@@ -97,8 +97,9 @@ class Metadata(RmmdBaseModel):
     """authors of the dataset"""
     title: Annotated[str, MinLen(1)]
     """name of the dataset"""
-    description: Annotated[str, MinLen(1)] | None = None
-    """description or abstract of the dataset, e.g., how it was obtained, what it contains, ..."""
+    abstract: NonEmptyOptionalStr = None
+    """description or abstract of the dataset, e.g., how it was obtained, contents, ...
+    """
     keywords: list[str] = Field(default_factory=list)
     """keywords for the dataset"""
     version: Annotated[str, MinLen(1)] | None = None

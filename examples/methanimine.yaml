@@ -2,7 +2,7 @@ schema_version: 0.1.0b0
 metadata:
   title: Methanimine example data
   license: MIT
-  description: >-
+  abstract: >-
     RMMD uses a fixedH-InChI to define the stereochemistry and connectivity of a
     molecular entity. However, in some cases, the fixedH-InChI is not sufficient to
     distinguish different species. This example demonstrates the use of the
