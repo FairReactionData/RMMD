@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from rmmd._base import RmmdBaseModel
 from rmmd.registry import HasKeyMixin, Registry
 
+
 ##############################################################################
 # Fixtures / helpers
 ##############################################################################

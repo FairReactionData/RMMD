@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from annotated_types import MinLen
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 RMMD_DEFAULT_CONFIG = ConfigDict(
     extra="forbid",
     use_attribute_docstrings=True,
+    # keep `frozen` unset here (not ``False``): to support a child freezing an unfrozen
+    # RmmdBaseModel's fields by way of pydantic mergin the configs of all bases
 )
 """default configuration for all RMMD data models."""
 
@@ -26,12 +27,15 @@ class RmmdFrozenBaseModel(BaseModel, frozen=True):
     )
 
 
-# Deliberately not an ``RmmdBaseModel`` subclass: pydantic's frozen/non-frozen
-# consistency check (enforced by its pyright plugin) forbids mixing a frozen and
-# a non-frozen ``BaseModel`` in one MRO
-# Still works as a mixin, if listed in the MRO before (Frozen)RmmdBaseModel.
-class HasDescriptionMixin:
+NonEmptyStr = Annotated[str, Field(min_length=1)]
+"""non-empty string type"""
+
+NonEmptyOptionalStr = Annotated[NonEmptyStr | None, Field(default=None)]
+"""non-empty optional string type"""
+
+
+class HasDescriptionMixin(RmmdBaseModel):
     """Mixin adding an optional human-readable description field."""
 
-    description: Annotated[str, MinLen(1)] | None = None
-    """human-readable description providing more details"""
+    description: NonEmptyOptionalStr = None
+    """human-readable description"""

@@ -98,7 +98,8 @@ class Metadata(RmmdBaseModel):
     title: Annotated[str, MinLen(1)]
     """name of the dataset"""
     abstract: Annotated[str, MinLen(1)] | None = None
-    """ a description of the dataset, e.g., how it was obtained, what it contains, ..."""
+    """description or abstract of the dataset, e.g., how it was obtained, contents, ...
+    """
     keywords: list[str] = Field(default_factory=list)
     """keywords for the dataset"""
     version: Annotated[str, MinLen(1)] | None = None
